@@ -1,0 +1,327 @@
+openapi: 3.0.3
+info:
+  title: Bookshelf API
+  description: API for storing books
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/v1/authors:
+    post:
+      tags:
+        - Author API
+      description: Add new author
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [full_name]
+              properties:
+                full_name:
+                  type: string
+                nationality:
+                  type: string
+                  example: Indonesia
+                  nullable: true
+      responses:
+        201:
+          description: Success create author
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Author"
+                
+    get:
+      tags:
+        - Author API
+      description: Get all authors or get authors by certain params
+      parameters:
+        - in: query
+          name: full_name
+          schema:
+            type: string
+          description: Filter authors by full_name (optional, can be combined with other filters)
+        - in: query
+          name: nationality
+          schema:
+            type: string
+          description: Filter authors by nationality (optional, can be combined with other filters)
+      responses:
+        200:
+          description: Success get authors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Author"
+  /api/v1/authors/{id}:
+    get:
+      tags:
+        - Author API
+      description: Get author by id
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: Get author by id
+      responses:
+        200:
+          description: Success get author by id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Author"
+    put:
+      tags:
+        - Author API
+      description: Update author by id
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: Update author by id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                nationality:
+                  type: string
+                  example: Indonesia
+                  nullable: true
+      responses:
+        200:
+          description: Success update author by id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Author"
+    delete:
+      tags:
+        - Author API
+      description: Delete author by id
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: Delete author by id
+      responses:
+        204:
+          description: Success delete author by id
+  /api/v1/books:
+    post:
+      tags:
+        - Book API
+      description: Add new book
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, total_page, author_id, status]
+              properties:
+                name:
+                  type: string
+                total_page:
+                  type: number
+                author_id:
+                  type: string
+                  format: uuid
+                photo_url:
+                  type: string
+                status:
+                  type: string
+                  enum: [completed, reading, plan_to_read]
+                date_complete:
+                  type: string
+                  format: date 
+                  nullable: true
+      responses:
+        201:
+          description: Success add new book
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Book"
+    get:
+      tags:
+        - Book API
+      description: Get all books or get books by certain params
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [completed, reading, plan_to_read]
+          description: Filter books by status (optional, can be combined with other filters)
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: Filter books by name (optional, can be combined with other filters)
+        - in: query
+          name: author_name
+          schema:
+            type: string
+          description: Filter books by author name (optional, can be combined with other filters)
+      responses:
+        200:
+          description: Success get books
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: 
+                      $ref: "#/components/schemas/Book"
+  /api/v1/books/{id}:
+    get:
+      tags:
+        - Book API
+      description: Get book by id
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: Get book by id
+      responses:
+        200:
+          description: Success get book by id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Book"
+    put:
+      tags:
+        - Book API
+      description: Update book by id
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: Update book by id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                total_page:
+                  type: number
+                author_id:
+                  type: string
+                  format: uuid
+                photo_url:
+                  type: string
+                status:
+                  type: string
+                  enum: [completed, reading, plan_to_read]
+                date_complete:
+                  type: string
+                  format: date
+                  nullable: true
+      responses:
+        200:
+          description: Success update book by id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Book"
+    delete:
+      tags:
+        - Book API
+      description: Delete book by id
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: Delete book by id
+      responses:
+        204:
+          description: Success delete book by id
+
+components:
+  schemas:
+    Author:
+      type: object
+      required: [id, full_name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        nationality:
+          type: string
+          nullable: true
+    Book:
+      type: object
+      required: [id, name, total_page, author_id, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        total_page:
+          type: number
+        author_id:
+          type: string
+          format: uuid
+        photo_url:
+          type: string
+        status:
+          type: string
+          enum: [completed, reading, plan_to_read]
+        date_complete:
+          type: string
+          format: date
+          nullable: true

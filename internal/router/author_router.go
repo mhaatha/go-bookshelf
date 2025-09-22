@@ -1,0 +1,11 @@
+package router
+
+import (
+	"net/http"
+
+	"github.com/mhaatha/go-bookshelf/internal/handler"
+)
+
+func AuthorRouter(handler handler.AuthorHandler, mux *http.ServeMux) {
+	mux.HandleFunc("POST /api/v1/authors", handler.Create)
+}

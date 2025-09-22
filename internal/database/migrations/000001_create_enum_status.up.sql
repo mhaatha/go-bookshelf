@@ -1,0 +1,1 @@
+CREATE TYPE status AS ENUM ('completed', 'reading', 'plan_to_read');

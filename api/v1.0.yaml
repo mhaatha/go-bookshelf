@@ -32,6 +32,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  message:
+                    type: string
                   data:
                     $ref: "#/components/schemas/Author"
                 
@@ -58,6 +60,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  message:
+                    type: string
                   data:
                     type: array
                     items:
@@ -83,6 +87,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  message:
+                    type: string
                   data:
                     $ref: "#/components/schemas/Author"
     put:
@@ -117,6 +123,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  message:
+                    type: string
                   data:
                     $ref: "#/components/schemas/Author"
     delete:
@@ -170,6 +178,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  message:
+                    type: string
                   data:
                     $ref: "#/components/schemas/Book"
     get:
@@ -201,6 +211,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  message:
+                    type: string
                   data:
                     type: array
                     items: 
@@ -226,6 +238,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  message:
+                    type: string
                   data:
                     $ref: "#/components/schemas/Book"
     put:
@@ -270,6 +284,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  message:
+                    type: string
                   data:
                     $ref: "#/components/schemas/Book"
     delete:

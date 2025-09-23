@@ -30,6 +30,18 @@ func (handler *AuthorHandlerImpl) Create(w http.ResponseWriter, r *http.Request)
 
 	authorResponse, err := handler.AuthorService.CreateNewAuthor(r.Context(), authorRequest)
 	if err != nil {
+		validationErrs := helper.TranslateValidationErrors(err)
+
+		if validationErrs != nil {
+			slog.Error("validation error", "err", err)
+
+			w.WriteHeader(http.StatusBadRequest)
+			helper.WriteToResponseBody(w, web.WebFailedResponse{
+				Errors: validationErrs,
+			})
+			return
+		}
+
 		slog.Error("error when calling CreateNewAuthor", "err", err)
 		return
 	}

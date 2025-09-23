@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mhaatha/go-bookshelf/internal/helper"
@@ -11,19 +12,27 @@ import (
 	"github.com/mhaatha/go-bookshelf/internal/repository"
 )
 
-func NewAuthorService(authorRepository repository.AuthorRepository, db *pgxpool.Pool) AuthorService {
+func NewAuthorService(authorRepository repository.AuthorRepository, db *pgxpool.Pool, validate *validator.Validate) AuthorService {
 	return &AuthorServiceImpl{
 		AuthorRepository: authorRepository,
 		DB:               db,
+		Validate:         validate,
 	}
 }
 
 type AuthorServiceImpl struct {
 	AuthorRepository repository.AuthorRepository
 	DB               *pgxpool.Pool
+	Validate         *validator.Validate
 }
 
 func (service *AuthorServiceImpl) CreateNewAuthor(ctx context.Context, request web.CreateAuthorRequest) (web.CreateAuthorResponse, error) {
+	// Validate request body
+	err := service.Validate.Struct(request)
+	if err != nil {
+		return web.CreateAuthorResponse{}, err
+	}
+
 	// Open transaction
 	tx, err := service.DB.Begin(ctx)
 	if err != nil {

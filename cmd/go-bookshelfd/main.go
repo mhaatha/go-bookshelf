@@ -42,11 +42,11 @@ func main() {
 
 	// Server
 	server := http.Server{
-		Addr:    ":8080",
+		Addr:    ":" + cfg.AppPort,
 		Handler: mux,
 	}
 
-	slog.Info("starting server on :8080")
+	slog.Info("starting server on :" + cfg.AppPort)
 	if err := server.ListenAndServe(); err != nil {
 		slog.Error("failed to start the server", "err", err)
 	}

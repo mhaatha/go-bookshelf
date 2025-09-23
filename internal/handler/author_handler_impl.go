@@ -43,6 +43,11 @@ func (handler *AuthorHandlerImpl) Create(w http.ResponseWriter, r *http.Request)
 		}
 
 		slog.Error("error when calling CreateNewAuthor", "err", err)
+		helper.WriteToResponseBody(w, web.WebFailedResponse{
+			Errors: http.StatusInternalServerError,
+		})
+		w.WriteHeader(http.StatusInternalServerError)
+
 		return
 	}
 

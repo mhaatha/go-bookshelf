@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -12,10 +11,6 @@ import (
 	"github.com/mhaatha/go-bookshelf/internal/router"
 	"github.com/mhaatha/go-bookshelf/internal/service"
 )
-
-func CreateAuthor(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Create author")
-}
 
 func main() {
 	// Log init

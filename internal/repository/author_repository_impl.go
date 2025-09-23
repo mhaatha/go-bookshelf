@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/mhaatha/go-bookshelf/internal/model/domain"
@@ -35,4 +37,26 @@ func (repository *AuthorRepositoryImpl) Save(ctx context.Context, tx pgx.Tx, aut
 	}
 
 	return author, nil
+}
+
+func (repository *AuthorRepositoryImpl) GetByFullName(ctx context.Context, tx pgx.Tx, fullName string) error {
+	sqlQuery := `
+	SELECT 1 FROM authors 
+	WHERE full_name = $1
+	`
+
+	var exists int
+	err := tx.QueryRow(ctx, sqlQuery, fullName).Scan(&exists)
+	if exists == 1 {
+		return fmt.Errorf("author %v is already exists", fullName)
+	}
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
 }

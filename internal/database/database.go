@@ -8,22 +8,18 @@ import (
 	"github.com/mhaatha/go-bookshelf/internal/config"
 )
 
-var DB *pgxpool.Pool
-
-func ConnectDB(cfg *config.Config) error {
+func ConnectDB(cfg *config.Config) (*pgxpool.Pool, error) {
 	dbPool, err := pgxpool.New(context.Background(), cfg.DBURL)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	DB = dbPool
-
 	// Check DB connection
-	err = DB.Ping(context.Background())
+	err = dbPool.Ping(context.Background())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	slog.Info("connected to the database")
-	return nil
+	return dbPool, nil
 }

@@ -3,8 +3,8 @@ package main
 import (
 	"log/slog"
 	"net/http"
+	"os"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/mhaatha/go-bookshelf/internal/config"
 	"github.com/mhaatha/go-bookshelf/internal/database"
 	"github.com/mhaatha/go-bookshelf/internal/handler"
@@ -21,24 +21,26 @@ func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		slog.Error("godotenv fails to load .env file", "err", err)
+		os.Exit(1)
 	}
 
 	// Validator init
-	validate := validator.New(validator.WithRequiredStructEnabled())
+	validate := config.ValidatorInit()
 
 	// Database init
-	err = database.ConnectDB(cfg)
+	db, err := database.ConnectDB(cfg)
 	if err != nil {
 		slog.Error("failed connect to database", "err", err)
+		os.Exit(1)
 	}
-	defer database.DB.Close()
+	defer db.Close()
 
 	// Main router
 	mux := http.NewServeMux()
 
 	// Author resources
 	authorRepository := repository.NewAuthorRepository()
-	authorService := service.NewAuthorService(authorRepository, database.DB, validate)
+	authorService := service.NewAuthorService(authorRepository, db, validate)
 	authorHandler := handler.NewAuthorHandler(authorService)
 
 	// Author Router

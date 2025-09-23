@@ -28,8 +28,10 @@ func (handler *AuthorHandlerImpl) Create(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Call the service
 	authorResponse, err := handler.AuthorService.CreateNewAuthor(r.Context(), authorRequest)
 	if err != nil {
+		// Check if it's a validation error
 		validationErrs := helper.TranslateValidationErrors(err)
 
 		if validationErrs != nil {
@@ -42,6 +44,7 @@ func (handler *AuthorHandlerImpl) Create(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
+		// If it's not a validation error, then it's an unexpected error
 		slog.Error("error when calling CreateNewAuthor", "err", err)
 
 		w.WriteHeader(http.StatusInternalServerError)
@@ -51,6 +54,7 @@ func (handler *AuthorHandlerImpl) Create(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Log the info
 	slog.Info("request handled",
 		"method", r.Method,
 		"endpoint", r.URL,

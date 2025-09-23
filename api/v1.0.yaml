@@ -20,8 +20,12 @@ paths:
               properties:
                 full_name:
                   type: string
+                  minLength: 3
+                  maxLength: 255
                 nationality:
                   type: string
+                  minLength: 3
+                  maxLength: 255
                   example: Indonesia
                   nullable: true
       responses:
@@ -111,8 +115,12 @@ paths:
               properties:
                 full_name:
                   type: string
+                  minLength: 3
+                  maxLength: 255
                 nationality:
                   type: string
+                  minLength: 3
+                  maxLength: 255
                   example: Indonesia
                   nullable: true
       responses:
@@ -156,6 +164,8 @@ paths:
               properties:
                 name:
                   type: string
+                  minLength: 3
+                  maxLength: 255
                 total_page:
                   type: number
                 author_id:
@@ -163,6 +173,8 @@ paths:
                   format: uuid
                 photo_url:
                   type: string
+                  minLength: 3
+                  maxLength: 255
                 status:
                   type: string
                   enum: [completed, reading, plan_to_read]
@@ -262,6 +274,8 @@ paths:
               properties:
                 name:
                   type: string
+                  minLength: 3
+                  maxLength: 255
                 total_page:
                   type: number
                 author_id:
@@ -269,6 +283,8 @@ paths:
                   format: uuid
                 photo_url:
                   type: string
+                  minLength: 3
+                  maxLength: 255 
                 status:
                   type: string
                   enum: [completed, reading, plan_to_read]
@@ -315,8 +331,12 @@ components:
           format: uuid
         full_name:
           type: string
+          minLength: 3
+          maxLength: 255
         nationality:
           type: string
+          minLength: 3
+          maxLength: 255
           nullable: true
     Book:
       type: object
@@ -327,6 +347,8 @@ components:
           format: uuid
         name:
           type: string
+          minLength: 3
+          maxLength: 255
         total_page:
           type: number
         author_id:
@@ -334,6 +356,8 @@ components:
           format: uuid
         photo_url:
           type: string
+          minLength: 3
+          maxLength: 255
         status:
           type: string
           enum: [completed, reading, plan_to_read]

@@ -38,7 +38,7 @@ func (handler *AuthorHandlerImpl) Create(w http.ResponseWriter, r *http.Request)
 			slog.Error("validation error", "err", err)
 
 			w.WriteHeader(http.StatusBadRequest)
-			helper.WriteToResponseBody(w, web.WebFailedResponse{
+			helper.WriteToResponseBody(w, http.StatusBadRequest, web.WebFailedResponse{
 				Errors: validationErrs,
 			})
 			return
@@ -47,9 +47,8 @@ func (handler *AuthorHandlerImpl) Create(w http.ResponseWriter, r *http.Request)
 		// If it's not a validation error, then it's an unexpected error
 		slog.Error("error when calling CreateNewAuthor", "err", err)
 
-		w.WriteHeader(http.StatusInternalServerError)
-		helper.WriteToResponseBody(w, web.WebFailedResponse{
-			Errors: http.StatusInternalServerError,
+		helper.WriteToResponseBody(w, http.StatusInternalServerError, web.WebFailedResponse{
+			Errors: http.StatusText(http.StatusInternalServerError),
 		})
 		return
 	}
@@ -62,8 +61,7 @@ func (handler *AuthorHandlerImpl) Create(w http.ResponseWriter, r *http.Request)
 	)
 
 	// Write and send the response
-	w.WriteHeader(http.StatusCreated)
-	helper.WriteToResponseBody(w, web.WebSuccessResponse{
+	helper.WriteToResponseBody(w, http.StatusCreated, web.WebSuccessResponse{
 		Message: "Author created successfully",
 		Data:    authorResponse,
 	})

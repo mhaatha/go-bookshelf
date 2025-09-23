@@ -13,7 +13,8 @@ const (
 )
 
 type Config struct {
-	DBURL string
+	DBURL   string
+	AppPort string
 }
 
 func LoadConfig() (*Config, error) {
@@ -25,6 +26,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return &Config{
-		DBURL: os.Getenv("DB_URL"),
+		DBURL:   os.Getenv("DB_URL"),
+		AppPort: os.Getenv("APP_PORT"),
 	}, nil
 }

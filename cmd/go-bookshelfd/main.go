@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/mhaatha/go-bookshelf/internal/config"
 	"github.com/mhaatha/go-bookshelf/internal/database"
@@ -52,8 +57,35 @@ func main() {
 		Handler: mux,
 	}
 
-	slog.Info("starting server on :" + cfg.AppPort)
-	if err := server.ListenAndServe(); err != nil {
-		slog.Error("failed to start the server", "err", err)
+	if cfg.AppEnv != string(config.EnvProduction) {
+		go func() {
+			slog.Info("starting server on :" + cfg.AppPort)
+			if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+				slog.Error("HTTP server error", "err", err)
+				os.Exit(1)
+			}
+			slog.Info("stopped serving new connections")
+		}()
+
+		signalChan := make(chan os.Signal, 1)
+		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+
+		<-signalChan
+
+		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownRelease()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			slog.Error("error while shut the server down", "err", err)
+			os.Exit(1)
+		}
+
+		slog.Info("server shut down gracefully")
+	} else {
+		slog.Info("starting server on :" + cfg.AppPort)
+		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("HTTP server error", "err", err)
+			os.Exit(1)
+		}
 	}
 }

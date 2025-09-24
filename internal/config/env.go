@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -9,16 +10,20 @@ import (
 type Environment string
 
 const (
-	EnvProduction Environment = "production"
+	EnvProduction  Environment   = "production"
+	ShutdownPeriod time.Duration = 10 * time.Second
 )
 
 type Config struct {
+	AppEnv  string
 	DBURL   string
 	AppPort string
 }
 
 func LoadConfig() (*Config, error) {
-	if os.Getenv("APP_ENV") != string(EnvProduction) {
+	appEnv := os.Getenv("APP_ENV")
+
+	if appEnv != string(EnvProduction) {
 		err := godotenv.Load("../../.env")
 		if err != nil {
 			return &Config{}, err
@@ -26,6 +31,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return &Config{
+		AppEnv:  appEnv,
 		DBURL:   os.Getenv("DB_URL"),
 		AppPort: os.Getenv("APP_PORT"),
 	}, nil

@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/mhaatha/go-bookshelf/internal/config"
 	"github.com/mhaatha/go-bookshelf/internal/database"
@@ -57,7 +56,7 @@ func main() {
 		Handler: mux,
 	}
 
-	if cfg.AppEnv != string(config.EnvProduction) {
+	if cfg.AppEnv == string(config.EnvProduction) {
 		go func() {
 			slog.Info("starting server on :" + cfg.AppPort)
 			if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
@@ -70,9 +69,11 @@ func main() {
 		signalChan := make(chan os.Signal, 1)
 		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 
+		// Wait for signal
 		<-signalChan
 
-		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
+		// 10 seconds shut down period
+		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), config.ShutdownPeriod)
 		defer shutdownRelease()
 
 		if err := server.Shutdown(shutdownCtx); err != nil {

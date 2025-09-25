@@ -8,4 +8,5 @@ import (
 
 type AuthorService interface {
 	CreateNewAuthor(ctx context.Context, request web.CreateAuthorRequest) (web.CreateAuthorResponse, error)
+	GetAllAuthors(ctx context.Context, queris web.QueryParamsGetAuthors) ([]web.GetAuthorResponse, error)
 }

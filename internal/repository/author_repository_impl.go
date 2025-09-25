@@ -20,7 +20,7 @@ func (repository *AuthorRepositoryImpl) Save(ctx context.Context, tx pgx.Tx, aut
 	sqlQuery := `
 	INSERT INTO authors (id, full_name, nationality)
 	VALUES ($1, $2, $3)
-	RETURNING created_at, updated_at
+	RETURNING id, created_at, updated_at
 	`
 
 	err := tx.QueryRow(
@@ -30,6 +30,7 @@ func (repository *AuthorRepositoryImpl) Save(ctx context.Context, tx pgx.Tx, aut
 		author.FullName,
 		author.Nationality,
 	).Scan(
+		&author.Id,
 		&author.CreatedAt,
 		&author.UpdatedAt,
 	)

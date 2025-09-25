@@ -21,9 +21,9 @@ func TranslateValidationErrors(err error) []map[string]string {
 			case "max":
 				msg = fmt.Sprintf("%s must be at most %s characters", e.Field(), e.Param())
 			case "validName":
-				msg = fmt.Sprintf("%s must not contain numbers and symbols", e.Field())
+				msg = fmt.Sprintf("%s must not contain numbers or symbols", e.Field())
 			case "alpha":
-				msg = fmt.Sprintf("%s must not contain numbers and symbols", e.Field())
+				msg = fmt.Sprintf("%s must not contain numbers or symbols", e.Field())
 			default:
 				msg = fmt.Sprintf("%s is invalid", e.Field())
 			}

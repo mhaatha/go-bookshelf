@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	appError "github.com/mhaatha/go-bookshelf/internal/errors"
 	"github.com/mhaatha/go-bookshelf/internal/helper"
 	"github.com/mhaatha/go-bookshelf/internal/model/domain"
 	"github.com/mhaatha/go-bookshelf/internal/model/web"
@@ -40,15 +42,27 @@ func (service *AuthorServiceImpl) CreateNewAuthor(ctx context.Context, request w
 	}
 	defer helper.CommitOrRollback(ctx, tx)
 
+	// errAggregate aggregates errors from user bad request
+	errAggregate := []appError.ErrAggregate{}
+
 	// Check if full_name already exists
 	err = service.AuthorRepository.GetByFullName(ctx, tx, request.FullName)
 	if err != nil {
-		// !!! Will be change, will be using custom error !!!
-		return web.CreateAuthorResponse{}, err
+		errAggregate = append(errAggregate, appError.ErrAggregate{
+			Field:   "full_name",
+			Message: fmt.Sprintf("author %s is already exists", request.FullName),
+		})
+	}
+
+	if len(errAggregate) != 0 {
+		return web.CreateAuthorResponse{}, appError.NewAppError(
+			http.StatusBadRequest,
+			errAggregate,
+			nil,
+		)
 	}
 
 	author := domain.Author{
-		Id:          uuid.NewString(),
 		FullName:    request.FullName,
 		Nationality: request.Nationality,
 	}

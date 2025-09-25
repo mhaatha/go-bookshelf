@@ -9,5 +9,6 @@ import (
 
 type AuthorRepository interface {
 	Save(ctx context.Context, tx pgx.Tx, author domain.Author) (domain.Author, error)
-	GetByFullName(ctx context.Context, tx pgx.Tx, fullName string) error
+	FindByFullName(ctx context.Context, tx pgx.Tx, fullName string) error
+	FindAll(ctx context.Context, tx pgx.Tx, fullName, nationality string) ([]domain.Author, error)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -41,7 +42,7 @@ func (repository *AuthorRepositoryImpl) Save(ctx context.Context, tx pgx.Tx, aut
 	return author, nil
 }
 
-func (repository *AuthorRepositoryImpl) GetByFullName(ctx context.Context, tx pgx.Tx, fullName string) error {
+func (repository *AuthorRepositoryImpl) FindByFullName(ctx context.Context, tx pgx.Tx, fullName string) error {
 	sqlQuery := `
 	SELECT 1 FROM authors 
 	WHERE full_name = $1
@@ -61,4 +62,64 @@ func (repository *AuthorRepositoryImpl) GetByFullName(ctx context.Context, tx pg
 	}
 
 	return nil
+}
+
+func (repository *AuthorRepositoryImpl) FindAll(ctx context.Context, tx pgx.Tx, fullName, nationality string) ([]domain.Author, error) {
+	baseQuery := `
+	SELECT id, full_name, nationality, created_at, updated_at
+	FROM authors
+	`
+
+	// Slice to aggregate arguments and WHERE condition dynamically
+	args := []interface{}{}
+	conditions := []string{}
+	argCount := 1
+
+	if fullName != "" {
+		conditions = append(conditions, fmt.Sprintf("full_name = $%d", argCount))
+		args = append(args, fullName)
+		argCount++
+	}
+	if nationality != "" {
+		conditions = append(conditions, fmt.Sprintf("nationality = $%d", argCount))
+		args = append(args, nationality)
+		argCount++
+	}
+
+	sqlQuery := baseQuery
+	if len(conditions) > 0 {
+		sqlQuery += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	rows, err := tx.Query(ctx, sqlQuery, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	authors := make([]domain.Author, 0)
+
+	for rows.Next() {
+		var author domain.Author
+
+		err := rows.Scan(
+			&author.Id,
+			&author.FullName,
+			&author.Nationality,
+			&author.CreatedAt,
+			&author.UpdatedAt,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		authors = append(authors, author)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return authors, nil
 }

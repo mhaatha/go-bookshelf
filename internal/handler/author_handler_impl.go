@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 
+	appError "github.com/mhaatha/go-bookshelf/internal/errors"
 	"github.com/mhaatha/go-bookshelf/internal/helper"
 	"github.com/mhaatha/go-bookshelf/internal/model/web"
 	"github.com/mhaatha/go-bookshelf/internal/service"
@@ -32,14 +34,25 @@ func (handler *AuthorHandlerImpl) Create(w http.ResponseWriter, r *http.Request)
 	authorResponse, err := handler.AuthorService.CreateNewAuthor(r.Context(), authorRequest)
 	if err != nil {
 		// Check if it's a validation error
-		validationErrs := helper.TranslateValidationErrors(err)
+		validationErrs := appError.TranslateValidationErrors(err)
 
 		if validationErrs != nil {
 			slog.Error("validation error", "err", err)
 
-			w.WriteHeader(http.StatusBadRequest)
 			helper.WriteToResponseBody(w, http.StatusBadRequest, web.WebFailedResponse{
 				Errors: validationErrs,
+			})
+			return
+		}
+
+		// Check if it's a custom error
+		var customErr *appError.AppError
+
+		if errors.As(err, &customErr) {
+			slog.Error("failed to create author", "err", err)
+
+			helper.WriteToResponseBody(w, customErr.StatusCode, web.WebFailedResponse{
+				Errors: customErr.ErrAggregate,
 			})
 			return
 		}

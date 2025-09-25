@@ -10,8 +10,7 @@ import (
 
 // ReadFromRequestBody reads the request body and stores it in the result parameter
 func ReadFromRequestBody(r *http.Request, result interface{}) error {
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(result)
+	err := json.NewDecoder(r.Body).Decode(result)
 	if err != nil {
 		return err
 	}
@@ -24,11 +23,9 @@ func WriteToResponseBody(w http.ResponseWriter, statusCode int, response interfa
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
-	encoder := json.NewEncoder(w)
-	if err := encoder.Encode(response); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		slog.Error("failed to encode response body", "err", err)
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 
 		fallback := web.WebFailedResponse{

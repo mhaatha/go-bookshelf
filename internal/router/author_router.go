@@ -8,4 +8,5 @@ import (
 
 func AuthorRouter(handler handler.AuthorHandler, mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/authors", handler.Create)
+	mux.HandleFunc("GET /api/v1/authors", handler.GetAll)
 }

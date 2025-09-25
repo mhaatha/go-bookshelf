@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/mhaatha/go-bookshelf/internal/model/domain"
 )
@@ -25,7 +26,7 @@ func (repository *AuthorRepositoryImpl) Save(ctx context.Context, tx pgx.Tx, aut
 	err := tx.QueryRow(
 		ctx,
 		sqlQuery,
-		author.Id,
+		uuid.NewString(),
 		author.FullName,
 		author.Nationality,
 	).Scan(

@@ -46,7 +46,7 @@ func (service *AuthorServiceImpl) CreateNewAuthor(ctx context.Context, request w
 	errAggregate := []appError.ErrAggregate{}
 
 	// Check if full_name already exists
-	err = service.AuthorRepository.GetByFullName(ctx, tx, request.FullName)
+	err = service.AuthorRepository.FindByFullName(ctx, tx, request.FullName)
 	if err != nil {
 		errAggregate = append(errAggregate, appError.ErrAggregate{
 			Field:   "full_name",
@@ -74,4 +74,32 @@ func (service *AuthorServiceImpl) CreateNewAuthor(ctx context.Context, request w
 	}
 
 	return helper.ToCreateAuthorResponse(author), nil
+}
+
+func (service *AuthorServiceImpl) GetAllAuthors(ctx context.Context, queries web.QueryParamsGetAuthors) ([]web.GetAuthorResponse, error) {
+	// Validate queries
+	err := service.Validate.Struct(queries)
+	if err != nil {
+		return []web.GetAuthorResponse{}, err
+	}
+
+	// Open transaction
+	tx, err := service.DB.Begin(ctx)
+	if err != nil {
+		return []web.GetAuthorResponse{}, err
+	}
+	defer helper.CommitOrRollback(ctx, tx)
+
+	// Call repository
+	authors, err := service.AuthorRepository.FindAll(ctx, tx, queries.FullName, queries.Nationality)
+	if err != nil {
+		return []web.GetAuthorResponse{}, err
+	}
+
+	// No records return []
+	if len(authors) == 0 {
+		return []web.GetAuthorResponse{}, nil
+	}
+
+	return helper.ToGetAuthorsResponse(authors), nil
 }

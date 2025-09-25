@@ -10,6 +10,11 @@ import (
 	"github.com/mhaatha/go-bookshelf/internal/service"
 )
 
+const (
+	queryFullName    = "full_name"
+	queryNationality = "nationality"
+)
+
 func NewAuthorHandler(authorService service.AuthorService) AuthorHandler {
 	return &AuthorHandlerImpl{
 		AuthorService: authorService,
@@ -47,5 +52,33 @@ func (handler *AuthorHandlerImpl) Create(w http.ResponseWriter, r *http.Request)
 	helper.WriteToResponseBody(w, http.StatusCreated, web.WebSuccessResponse{
 		Message: "Author created successfully",
 		Data:    authorResponse,
+	})
+}
+
+func (handler *AuthorHandlerImpl) GetAll(w http.ResponseWriter, r *http.Request) {
+	// Get query params if any
+	queries := web.QueryParamsGetAuthors{
+		FullName:    r.URL.Query().Get(queryFullName),
+		Nationality: r.URL.Query().Get(queryNationality),
+	}
+
+	// Call the service
+	authorsResponse, err := handler.AuthorService.GetAllAuthors(r.Context(), queries)
+	if err != nil {
+		appError.ResponseServiceErrorHandler(w, err, "failed to get authors")
+		return
+	}
+
+	// Log the info
+	slog.Info("request handled",
+		"method", r.Method,
+		"endpoint", r.URL,
+		"status", http.StatusOK,
+	)
+
+	// Write and send the response
+	helper.WriteToResponseBody(w, http.StatusOK, web.WebSuccessResponse{
+		Message: "Sucess get all authors",
+		Data:    authorsResponse,
 	})
 }

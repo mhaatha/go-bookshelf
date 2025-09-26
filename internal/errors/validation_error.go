@@ -24,6 +24,8 @@ func TranslateValidationErrors(err error) []map[string]string {
 				msg = fmt.Sprintf("%s must not contain numbers or symbols", e.Field())
 			case "alpha":
 				msg = fmt.Sprintf("%s must not contain numbers or symbols", e.Field())
+			case "uuid":
+				msg = fmt.Sprintf("'%s' is not a valid UUID", e.Value())
 			default:
 				msg = fmt.Sprintf("%s is invalid", e.Field())
 			}

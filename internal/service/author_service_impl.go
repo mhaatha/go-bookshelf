@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -102,4 +104,41 @@ func (service *AuthorServiceImpl) GetAllAuthors(ctx context.Context, queries web
 	}
 
 	return helper.ToGetAuthorsResponse(authors), nil
+}
+
+func (service *AuthorServiceImpl) GetAuthorById(ctx context.Context, pathValues web.PathParamsGetAuthor) (web.GetAuthorResponse, error) {
+	// Validate path params
+	err := service.Validate.Struct(pathValues)
+	if err != nil {
+		return web.GetAuthorResponse{}, err
+	}
+
+	// Open transcation
+	tx, err := service.DB.Begin(ctx)
+	if err != nil {
+		return web.GetAuthorResponse{}, err
+	}
+
+	// errAggregate aggregates errors from user bad request
+	errAggregate := []appError.ErrAggregate{}
+
+	// Call repository
+	author, err := service.AuthorRepository.FindById(ctx, tx, pathValues.Id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			errAggregate = append(errAggregate, appError.ErrAggregate{
+				Field:   "id",
+				Message: fmt.Sprintf("author with id '%s' is not found", pathValues.Id),
+			})
+
+			return web.GetAuthorResponse{}, appError.NewAppError(
+				http.StatusNotFound,
+				errAggregate,
+				fmt.Errorf("author with id '%s' is not found", pathValues.Id),
+			)
+		}
+		return web.GetAuthorResponse{}, err
+	}
+
+	return helper.ToGetAuthorResponse(author), nil
 }

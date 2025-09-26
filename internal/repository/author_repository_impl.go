@@ -123,3 +123,27 @@ func (repository *AuthorRepositoryImpl) FindAll(ctx context.Context, tx pgx.Tx, 
 
 	return authors, nil
 }
+
+func (repository *AuthorRepositoryImpl) FindById(ctx context.Context, tx pgx.Tx, authorId string) (domain.Author, error) {
+	sqlQuery := `
+	SELECT full_name, nationality, created_at, updated_at
+	FROM authors
+	WHERE id = $1
+	`
+
+	author := domain.Author{
+		Id: authorId,
+	}
+
+	err := tx.QueryRow(ctx, sqlQuery, authorId).Scan(
+		&author.FullName,
+		&author.Nationality,
+		&author.CreatedAt,
+		&author.UpdatedAt,
+	)
+	if err != nil {
+		return domain.Author{}, err
+	}
+
+	return author, nil
+}

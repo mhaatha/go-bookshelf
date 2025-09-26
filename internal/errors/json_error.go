@@ -17,7 +17,7 @@ func RequestJSONErrorHandler(w http.ResponseWriter, err error) {
 	if errors.As(err, &jsonSyntaxErr) {
 		slog.Error("invalid JSON syntax", "err", err)
 
-		helper.WriteToResponseBody(w, http.StatusInternalServerError, web.WebFailedResponse{
+		helper.WriteToResponseBody(w, http.StatusBadRequest, web.WebFailedResponse{
 			Errors: "Invalid JSON payload",
 		})
 		return
@@ -28,7 +28,7 @@ func RequestJSONErrorHandler(w http.ResponseWriter, err error) {
 	if errors.As(err, &jsonTypeErr) {
 		slog.Error("invalid JSON type", "err", err)
 
-		helper.WriteToResponseBody(w, http.StatusInternalServerError, web.WebFailedResponse{
+		helper.WriteToResponseBody(w, http.StatusBadRequest, web.WebFailedResponse{
 			Errors: fmt.Sprintf("Invalid JSON type for field: %v", jsonTypeErr.Field),
 		})
 		return

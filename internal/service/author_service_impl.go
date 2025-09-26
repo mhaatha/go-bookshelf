@@ -142,3 +142,71 @@ func (service *AuthorServiceImpl) GetAuthorById(ctx context.Context, pathValues 
 
 	return helper.ToGetAuthorResponse(author), nil
 }
+
+func (service *AuthorServiceImpl) UpdateAuthorById(ctx context.Context, pathValues web.PathParamsGetAuthor, request web.UpdateAuthorRequest) (web.UpdateAuthorResponse, error) {
+	// Validate path params
+	err := service.Validate.Struct(pathValues)
+	if err != nil {
+		return web.UpdateAuthorResponse{}, err
+	}
+
+	// Validate request body
+	err = service.Validate.Struct(request)
+	if err != nil {
+		return web.UpdateAuthorResponse{}, err
+	}
+
+	// Open transaction
+	tx, err := service.DB.Begin(ctx)
+	if err != nil {
+		return web.UpdateAuthorResponse{}, err
+	}
+	defer helper.CommitOrRollback(ctx, tx)
+
+	// errAggregate aggregates errors from user bad request
+	errAggregate := []appError.ErrAggregate{}
+
+	// Check if id is exists
+	_, err = service.AuthorRepository.FindById(ctx, tx, pathValues.Id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			errAggregate = append(errAggregate, appError.ErrAggregate{
+				Field:   "id",
+				Message: fmt.Sprintf("author with id '%s' is not found", pathValues.Id),
+			})
+		} else {
+			return web.UpdateAuthorResponse{}, err
+		}
+	}
+
+	// Check if full_name already exists
+	err = service.AuthorRepository.FindByFullName(ctx, tx, request.FullName)
+	if err != nil {
+		errAggregate = append(errAggregate, appError.ErrAggregate{
+			Field:   "full_name",
+			Message: fmt.Sprintf("author %s is already exists", request.FullName),
+		})
+	}
+
+	if len(errAggregate) != 0 {
+		return web.UpdateAuthorResponse{}, appError.NewAppError(
+			http.StatusBadRequest,
+			errAggregate,
+			nil,
+		)
+	}
+
+	author := domain.Author{
+		Id:          pathValues.Id,
+		FullName:    request.FullName,
+		Nationality: request.Nationality,
+	}
+
+	// Call repository
+	author, err = service.AuthorRepository.Update(ctx, tx, pathValues.Id, author)
+	if err != nil {
+		return web.UpdateAuthorResponse{}, err
+	}
+
+	return helper.ToUpdateAuthorResponse(author), nil
+}

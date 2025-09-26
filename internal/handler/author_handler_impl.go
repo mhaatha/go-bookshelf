@@ -146,3 +146,27 @@ func (handler *AuthorHandlerImpl) UpdateById(w http.ResponseWriter, r *http.Requ
 		Data:    authorResponse,
 	})
 }
+
+func (handler *AuthorHandlerImpl) DeleteById(w http.ResponseWriter, r *http.Request) {
+	// Get path values if any
+	pathValue := web.PathParamsGetAuthor{
+		Id: r.PathValue(wildcardId),
+	}
+
+	// Call the service
+	err := handler.AuthorService.DeleteAuthorById(r.Context(), pathValue)
+	if err != nil {
+		appError.ResponseServiceErrorHandler(w, err, "failed to update author by id")
+		return
+	}
+
+	// Log the info
+	slog.Info("request handled",
+		"method", r.Method,
+		"endpoint", r.URL,
+		"status", http.StatusNoContent,
+	)
+
+	// Set to 204 No Content
+	w.WriteHeader(http.StatusNoContent)
+}

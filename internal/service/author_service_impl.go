@@ -174,6 +174,13 @@ func (service *AuthorServiceImpl) UpdateAuthorById(ctx context.Context, pathValu
 				Field:   "id",
 				Message: fmt.Sprintf("author with id '%s' is not found", pathValues.Id),
 			})
+
+			// If id is not found, return earlier
+			return web.UpdateAuthorResponse{}, appError.NewAppError(
+				http.StatusNotFound,
+				errAggregate,
+				fmt.Errorf("author with id '%v' is not found", pathValues.Id),
+			)
 		} else {
 			return web.UpdateAuthorResponse{}, err
 		}
@@ -209,4 +216,58 @@ func (service *AuthorServiceImpl) UpdateAuthorById(ctx context.Context, pathValu
 	}
 
 	return helper.ToUpdateAuthorResponse(author), nil
+}
+
+func (service *AuthorServiceImpl) DeleteAuthorById(ctx context.Context, pathValues web.PathParamsGetAuthor) error {
+	// Validate path params
+	err := service.Validate.Struct(pathValues)
+	if err != nil {
+		return err
+	}
+
+	// Open transaction
+	tx, err := service.DB.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer helper.CommitOrRollback(ctx, tx)
+
+	// errAggregate aggregates errors from user bad request
+	errAggregate := []appError.ErrAggregate{}
+
+	// Check if id is exists
+	_, err = service.AuthorRepository.FindById(ctx, tx, pathValues.Id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			errAggregate = append(errAggregate, appError.ErrAggregate{
+				Field:   "id",
+				Message: fmt.Sprintf("author with id '%s' is not found", pathValues.Id),
+			})
+
+			// if id not found, return earlier
+			return appError.NewAppError(
+				http.StatusNotFound,
+				errAggregate,
+				fmt.Errorf("author with id '%v' is not found", pathValues.Id),
+			)
+		} else {
+			return err
+		}
+	}
+
+	if len(errAggregate) != 0 {
+		return appError.NewAppError(
+			http.StatusBadRequest,
+			errAggregate,
+			nil,
+		)
+	}
+
+	// Call repository
+	err = service.AuthorRepository.Delete(ctx, tx, pathValues.Id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

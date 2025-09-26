@@ -86,6 +86,7 @@ func (handler *AuthorHandlerImpl) GetAll(w http.ResponseWriter, r *http.Request)
 }
 
 func (handler *AuthorHandlerImpl) GetById(w http.ResponseWriter, r *http.Request) {
+	// Get path values if any
 	pathValue := web.PathParamsGetAuthor{
 		Id: r.PathValue(wildcardId),
 	}
@@ -107,6 +108,41 @@ func (handler *AuthorHandlerImpl) GetById(w http.ResponseWriter, r *http.Request
 	// Write and send the response
 	helper.WriteToResponseBody(w, http.StatusOK, web.WebSuccessResponse{
 		Message: "Sucess get author",
+		Data:    authorResponse,
+	})
+}
+
+func (handler *AuthorHandlerImpl) UpdateById(w http.ResponseWriter, r *http.Request) {
+	// Get path values if any
+	pathValue := web.PathParamsGetAuthor{
+		Id: r.PathValue(wildcardId),
+	}
+
+	// Get request body and write it to authorRequest
+	authorRequest := web.UpdateAuthorRequest{}
+	err := helper.ReadFromRequestBody(r, &authorRequest)
+	if err != nil {
+		appError.RequestJSONErrorHandler(w, err)
+		return
+	}
+
+	// Call the service
+	authorResponse, err := handler.AuthorService.UpdateAuthorById(r.Context(), pathValue, authorRequest)
+	if err != nil {
+		appError.ResponseServiceErrorHandler(w, err, "failed to update author by id")
+		return
+	}
+
+	// Log the info
+	slog.Info("request handled",
+		"method", r.Method,
+		"endpoint", r.URL,
+		"status", http.StatusOK,
+	)
+
+	// Write and send the response
+	helper.WriteToResponseBody(w, http.StatusCreated, web.WebSuccessResponse{
+		Message: "Author updated successfully",
 		Data:    authorResponse,
 	})
 }

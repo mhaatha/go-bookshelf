@@ -9,3 +9,7 @@ type QueryParamsGetAuthors struct {
 	FullName    string `json:"full_name" validate:"omitempty,min=3,max=255,validName"`
 	Nationality string `json:"nationality" validate:"omitempty,min=3,max=255,alpha"`
 }
+
+type PathParamsGetAuthor struct {
+	Id string `json:"id" validate:"omitempty,uuid"`
+}

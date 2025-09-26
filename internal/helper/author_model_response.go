@@ -32,3 +32,13 @@ func ToGetAuthorsResponse(authors []domain.Author) []web.GetAuthorResponse {
 	}
 	return authorResponses
 }
+
+func ToUpdateAuthorResponse(author domain.Author) web.UpdateAuthorResponse {
+	return web.UpdateAuthorResponse{
+		Id:          author.Id,
+		FullName:    author.FullName,
+		Nationality: author.Nationality,
+		CreatedAt:   author.CreatedAt,
+		UpdatedAt:   author.UpdatedAt,
+	}
+}

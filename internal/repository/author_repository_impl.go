@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -140,6 +141,33 @@ func (repository *AuthorRepositoryImpl) FindById(ctx context.Context, tx pgx.Tx,
 		&author.Nationality,
 		&author.CreatedAt,
 		&author.UpdatedAt,
+	)
+	if err != nil {
+		return domain.Author{}, err
+	}
+
+	return author, nil
+}
+
+func (repository *AuthorRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, authorId string, author domain.Author) (domain.Author, error) {
+	sqlQuery := `
+	UPDATE authors
+	SET full_name = $1, nationality = $2, updated_at = $3
+	WHERE id = $4
+	RETURNING created_at
+	`
+
+	updatedAt := time.Now()
+
+	err := tx.QueryRow(
+		ctx,
+		sqlQuery,
+		author.FullName,
+		author.Nationality,
+		updatedAt,
+		authorId,
+	).Scan(
+		&author.CreatedAt,
 	)
 	if err != nil {
 		return domain.Author{}, err

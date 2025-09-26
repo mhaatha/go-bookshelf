@@ -11,4 +11,5 @@ type AuthorService interface {
 	GetAllAuthors(ctx context.Context, queris web.QueryParamsGetAuthors) ([]web.GetAuthorResponse, error)
 	GetAuthorById(ctx context.Context, pathValues web.PathParamsGetAuthor) (web.GetAuthorResponse, error)
 	UpdateAuthorById(ctx context.Context, pathValues web.PathParamsGetAuthor, request web.UpdateAuthorRequest) (web.UpdateAuthorResponse, error)
+	DeleteAuthorById(ctx context.Context, pathValues web.PathParamsGetAuthor) error
 }

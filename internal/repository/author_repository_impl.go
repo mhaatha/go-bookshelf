@@ -175,3 +175,17 @@ func (repository *AuthorRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, a
 
 	return author, nil
 }
+
+func (repository *AuthorRepositoryImpl) Delete(ctx context.Context, tx pgx.Tx, authorId string) error {
+	sqlQuery := `
+	DELETE FROM authors
+	WHERE id = $1
+	`
+
+	_, err := tx.Exec(ctx, sqlQuery, authorId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

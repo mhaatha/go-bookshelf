@@ -11,4 +11,5 @@ func AuthorRouter(handler handler.AuthorHandler, mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/authors", handler.GetAll)
 	mux.HandleFunc("GET /api/v1/authors/{id}", handler.GetById)
 	mux.HandleFunc("PUT /api/v1/authors/{id}", handler.UpdateById)
+	mux.HandleFunc("DELETE /api/v1/authors/{id}", handler.DeleteById)
 }

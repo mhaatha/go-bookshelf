@@ -54,8 +54,15 @@ func main() {
 	authorService := service.NewAuthorService(authorRepository, db, validate)
 	authorHandler := handler.NewAuthorHandler(authorService)
 
-	// Author Router
+	// Author router
 	router.AuthorRouter(authorHandler, mux)
+
+	// Upload resources
+	uploadService := service.NewUploadService(minioClient)
+	uploadHandler := handler.NewUploadHandler(uploadService)
+
+	// Upload router
+	router.UploadRouter(uploadHandler, mux)
 
 	// Server
 	server := http.Server{

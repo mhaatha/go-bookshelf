@@ -14,6 +14,14 @@ type PathParamsGetAuthor struct {
 	Id string `json:"id" validate:"omitempty,uuid"`
 }
 
+type PathParamsUpdateAuthor struct {
+	Id string `json:"id" validate:"omitempty,uuid"`
+}
+
+type PathParamsDeleteAuthor struct {
+	Id string `json:"id" validate:"omitempty,uuid"`
+}
+
 type UpdateAuthorRequest struct {
 	FullName    string `json:"full_name" validate:"required,min=3,max=255,validName"`
 	Nationality string `json:"nationality" validate:"required,min=3,max=255,alpha"`

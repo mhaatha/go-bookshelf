@@ -319,6 +319,23 @@ paths:
       responses:
         204:
           description: Success delete book by id
+  /api/v1/upload/books/presigned-url:
+    get:
+      tags:
+        - Upload API
+      description: Get presigned URL for upload book image
+      responses:
+        200:
+          description: Success get presigned URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Upload"
 
 components:
   schemas:
@@ -365,3 +382,12 @@ components:
           type: string
           format: date
           nullable: true
+    Upload:
+      type: object
+      required: [url, key]
+      properties:
+        url:
+          type: string
+        key:
+          type: string
+    

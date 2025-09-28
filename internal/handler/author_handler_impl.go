@@ -114,7 +114,7 @@ func (handler *AuthorHandlerImpl) GetById(w http.ResponseWriter, r *http.Request
 
 func (handler *AuthorHandlerImpl) UpdateById(w http.ResponseWriter, r *http.Request) {
 	// Get path values if any
-	pathValue := web.PathParamsGetAuthor{
+	pathValue := web.PathParamsUpdateAuthor{
 		Id: r.PathValue(wildcardId),
 	}
 
@@ -149,7 +149,7 @@ func (handler *AuthorHandlerImpl) UpdateById(w http.ResponseWriter, r *http.Requ
 
 func (handler *AuthorHandlerImpl) DeleteById(w http.ResponseWriter, r *http.Request) {
 	// Get path values if any
-	pathValue := web.PathParamsGetAuthor{
+	pathValue := web.PathParamsDeleteAuthor{
 		Id: r.PathValue(wildcardId),
 	}
 

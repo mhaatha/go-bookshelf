@@ -143,7 +143,7 @@ func (service *AuthorServiceImpl) GetAuthorById(ctx context.Context, pathValues 
 	return helper.ToGetAuthorResponse(author), nil
 }
 
-func (service *AuthorServiceImpl) UpdateAuthorById(ctx context.Context, pathValues web.PathParamsGetAuthor, request web.UpdateAuthorRequest) (web.UpdateAuthorResponse, error) {
+func (service *AuthorServiceImpl) UpdateAuthorById(ctx context.Context, pathValues web.PathParamsUpdateAuthor, request web.UpdateAuthorRequest) (web.UpdateAuthorResponse, error) {
 	// Validate path params
 	err := service.Validate.Struct(pathValues)
 	if err != nil {
@@ -218,7 +218,7 @@ func (service *AuthorServiceImpl) UpdateAuthorById(ctx context.Context, pathValu
 	return helper.ToUpdateAuthorResponse(author), nil
 }
 
-func (service *AuthorServiceImpl) DeleteAuthorById(ctx context.Context, pathValues web.PathParamsGetAuthor) error {
+func (service *AuthorServiceImpl) DeleteAuthorById(ctx context.Context, pathValues web.PathParamsDeleteAuthor) error {
 	// Validate path params
 	err := service.Validate.Struct(pathValues)
 	if err != nil {

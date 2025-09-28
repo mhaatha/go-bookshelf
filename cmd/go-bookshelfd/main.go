@@ -39,6 +39,13 @@ func main() {
 	}
 	defer db.Close()
 
+	// MinIO init
+	minioClient, err := config.MinIOInit(cfg)
+	if err != nil {
+		slog.Error("failed to initialize MinIO client", "err", err)
+		os.Exit(1)
+	}
+
 	// Main router
 	mux := http.NewServeMux()
 

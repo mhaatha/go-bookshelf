@@ -16,8 +16,13 @@ const (
 
 type Config struct {
 	AppEnv  string
-	DBURL   string
 	AppPort string
+
+	DBURL string
+
+	MinIOEndpoint        string
+	MinIOAccessKeyId     string
+	MinIOSecretAccessKey string
 }
 
 func LoadConfig() (*Config, error) {
@@ -31,8 +36,11 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return &Config{
-		AppEnv:  appEnv,
-		DBURL:   os.Getenv("DB_URL"),
-		AppPort: os.Getenv("APP_PORT"),
+		AppEnv:               appEnv,
+		DBURL:                os.Getenv("DB_URL"),
+		AppPort:              os.Getenv("APP_PORT"),
+		MinIOEndpoint:        os.Getenv("MINIO_ENDPOINT"),
+		MinIOAccessKeyId:     os.Getenv("MINIO_ACCESS_KEY_ID"),
+		MinIOSecretAccessKey: os.Getenv("MINIO_SECRET_KEY_ID"),
 	}, nil
 }

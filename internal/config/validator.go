@@ -20,6 +20,7 @@ func ValidatorInit() *validator.Validate {
 
 	// Register custom validation
 	validate.RegisterValidation("validName", validName)
+	validate.RegisterValidation("bookStatus", bookStatus)
 
 	return validate
 }
@@ -27,4 +28,14 @@ func ValidatorInit() *validator.Validate {
 func validName(fl validator.FieldLevel) bool {
 	value := fl.Field().String()
 	return nameRegex.MatchString(value)
+}
+
+func bookStatus(fl validator.FieldLevel) bool {
+	status := fl.Field().String()
+
+	if status != "completed" && status != "reading" && status != "plan_to_read" {
+		return false
+	}
+
+	return true
 }

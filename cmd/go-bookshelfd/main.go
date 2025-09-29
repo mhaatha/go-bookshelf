@@ -64,6 +64,14 @@ func main() {
 	// Upload router
 	router.UploadRouter(uploadHandler, mux)
 
+	// Book resources
+	bookRepository := repository.NewBookRepository()
+	bookService := service.NewBookService(bookRepository, authorService, db, validate)
+	bookhandler := handler.NewBookHandler(bookService)
+
+	// Book router
+	router.BookRouter(bookhandler, mux)
+
 	// Server
 	server := http.Server{
 		Addr:    ":" + cfg.AppPort,

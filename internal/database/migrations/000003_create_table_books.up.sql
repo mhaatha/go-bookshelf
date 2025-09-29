@@ -10,6 +10,5 @@ CREATE TABLE books (
     updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY(id),
-    FOREIGN KEY(author_id) REFERENCES authors (id),
-    UNIQUE(photo_url)
+    FOREIGN KEY(author_id) REFERENCES authors (id)
 );

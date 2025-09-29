@@ -23,6 +23,8 @@ type Config struct {
 	MinIOEndpoint        string
 	MinIOAccessKeyId     string
 	MinIOSecretAccessKey string
+
+	BookBucket string
 }
 
 func LoadConfig() (*Config, error) {
@@ -41,6 +43,7 @@ func LoadConfig() (*Config, error) {
 		AppPort:              os.Getenv("APP_PORT"),
 		MinIOEndpoint:        os.Getenv("MINIO_ENDPOINT"),
 		MinIOAccessKeyId:     os.Getenv("MINIO_ACCESS_KEY_ID"),
-		MinIOSecretAccessKey: os.Getenv("MINIO_SECRET_KEY_ID"),
+		MinIOSecretAccessKey: os.Getenv("MINIO_SECRET_ACCESS_KEY"),
+		BookBucket:           os.Getenv("BOOK_BUCKET"),
 	}, nil
 }

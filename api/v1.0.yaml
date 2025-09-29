@@ -388,6 +388,22 @@ components:
       properties:
         url:
           type: string
-        key:
-          type: string
-    
+        form_data:
+          type: object
+          properties:
+            Content-Type:
+              type: string
+            bucket:
+              type: string
+            key:
+              type: string
+            policy:
+              type: string
+            x-amz-algorithm:
+              type: string
+            x-amz-credential:
+              type: string
+            x-amz-date:
+              type: string
+            x-amz-signature:
+              type: string

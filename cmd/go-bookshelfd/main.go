@@ -58,7 +58,7 @@ func main() {
 	router.AuthorRouter(authorHandler, mux)
 
 	// Upload resources
-	uploadService := service.NewUploadService(minioClient)
+	uploadService := service.NewUploadService(minioClient, cfg)
 	uploadHandler := handler.NewUploadHandler(uploadService)
 
 	// Upload router

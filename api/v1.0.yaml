@@ -178,7 +178,7 @@ paths:
                 status:
                   type: string
                   enum: [completed, reading, plan_to_read]
-                date_complete:
+                completed_date:
                   type: string
                   format: date 
                   nullable: true
@@ -288,7 +288,7 @@ paths:
                 status:
                   type: string
                   enum: [completed, reading, plan_to_read]
-                date_complete:
+                completed_date:
                   type: string
                   format: date
                   nullable: true
@@ -378,10 +378,16 @@ components:
         status:
           type: string
           enum: [completed, reading, plan_to_read]
-        date_complete:
+        completed_date:
           type: string
           format: date
           nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     Upload:
       type: object
       required: [url, key]

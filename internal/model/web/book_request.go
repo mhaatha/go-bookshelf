@@ -31,3 +31,7 @@ type UpdateBookRequest struct {
 	Status        string `json:"status" validate:"required,bookStatus"`
 	CompletedDate string `json:"completed_date" validate:"omitempty,datetime=2006-01-02"`
 }
+
+type PathParamsDeleteBook struct {
+	Id string `json:"id" validate:"omitempty,uuid"`
+}

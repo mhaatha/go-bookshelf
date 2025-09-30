@@ -131,3 +131,40 @@ func (service *BookServiceImpl) GetAllBooks(ctx context.Context, queries web.Que
 
 	return helper.ToGetBooksResponse(books), nil
 }
+
+func (service *BookServiceImpl) GetBookById(ctx context.Context, pathValues web.PathParamsGetBook) (web.GetBookResponse, error) {
+	// Validate path params
+	err := service.Validate.Struct(pathValues)
+	if err != nil {
+		return web.GetBookResponse{}, err
+	}
+
+	// Open transcation
+	tx, err := service.DB.Begin(ctx)
+	if err != nil {
+		return web.GetBookResponse{}, err
+	}
+
+	// errAggregate aggregates errors from user bad request
+	errAggregate := []appError.ErrAggregate{}
+
+	// Call repository
+	book, err := service.BookRepository.FindById(ctx, tx, pathValues.Id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			errAggregate = append(errAggregate, appError.ErrAggregate{
+				Field:   "id",
+				Message: fmt.Sprintf("book with id '%s' is not found", pathValues.Id),
+			})
+
+			return web.GetBookResponse{}, appError.NewAppError(
+				http.StatusNotFound,
+				errAggregate,
+				fmt.Errorf("book with id '%s' is not found", pathValues.Id),
+			)
+		}
+		return web.GetBookResponse{}, err
+	}
+
+	return helper.ToGetBookResponse(book), nil
+}

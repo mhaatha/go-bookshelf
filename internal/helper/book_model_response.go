@@ -40,3 +40,17 @@ func ToGetBooksResponse(books []domain.Book) []web.GetBookResponse {
 	}
 	return bookResponses
 }
+
+func ToUpdateBookResponse(book domain.Book) web.UpdateBookResponse {
+	return web.UpdateBookResponse{
+		Id:            book.Id,
+		Name:          book.Name,
+		TotalPage:     book.TotalPage,
+		AuthorId:      book.AuthorId,
+		PhotoURL:      book.PhotoURL,
+		Status:        book.Status,
+		CompletedDate: book.CompletedDate,
+		CreatedAt:     book.CreatedAt,
+		UpdatedAt:     book.UpdatedAt,
+	}
+}

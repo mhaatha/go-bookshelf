@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -79,13 +80,19 @@ func (service *BookServiceImpl) CreateNewBook(ctx context.Context, request web.C
 		)
 	}
 
+	// Parse completed_date to time.Time manually
+	t, err := time.Parse("2006-01-02", request.CompletedDate)
+	if err != nil {
+		return web.CreateBookResponse{}, err
+	}
+
 	book := domain.Book{
 		Name:          request.Name,
 		TotalPage:     request.TotalPage,
 		AuthorId:      request.AuthorId,
 		PhotoURL:      request.PhotoURL,
 		Status:        request.Status,
-		CompletedDate: request.CompletedDate,
+		CompletedDate: t,
 	}
 
 	// Call repository

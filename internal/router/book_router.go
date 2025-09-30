@@ -11,4 +11,5 @@ func BookRouter(handler handler.BookHandler, mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/books", handler.GetAll)
 	mux.HandleFunc("GET /api/v1/books/{id}", handler.GetById)
 	mux.HandleFunc("PUT /api/v1/books/{id}", handler.UpdateById)
+	mux.HandleFunc("DELETE /api/v1/books/{id}", handler.DeleteById)
 }

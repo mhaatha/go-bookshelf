@@ -13,4 +13,5 @@ type BookRepository interface {
 	FindAll(ctx context.Context, tx pgx.Tx, name, status, author_name string) ([]domain.Book, error)
 	FindById(ctx context.Context, tx pgx.Tx, bookId string) (domain.Book, error)
 	Update(ctx context.Context, tx pgx.Tx, bookId string, book domain.Book) (domain.Book, error)
+	Delete(ctx context.Context, tx pgx.Tx, bookId string) error
 }

@@ -8,4 +8,5 @@ import (
 
 type BookService interface {
 	CreateNewBook(ctx context.Context, request web.CreateBookRequest) (web.CreateBookResponse, error)
+	GetAllBooks(ctx context.Context, queries web.QueryParamsGetBooks) ([]web.GetBookResponse, error)
 }

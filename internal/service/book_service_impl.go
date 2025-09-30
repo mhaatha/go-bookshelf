@@ -10,19 +10,23 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/mhaatha/go-bookshelf/internal/config"
 	appError "github.com/mhaatha/go-bookshelf/internal/errors"
 	"github.com/mhaatha/go-bookshelf/internal/helper"
 	"github.com/mhaatha/go-bookshelf/internal/model/domain"
 	"github.com/mhaatha/go-bookshelf/internal/model/web"
 	"github.com/mhaatha/go-bookshelf/internal/repository"
+	"github.com/minio/minio-go/v7"
 )
 
-func NewBookService(bookRepository repository.BookRepository, authorService AuthorService, db *pgxpool.Pool, validate *validator.Validate) BookService {
+func NewBookService(bookRepository repository.BookRepository, authorService AuthorService, db *pgxpool.Pool, validate *validator.Validate, minioClient *minio.Client, cfg *config.Config) BookService {
 	return &BookServiceImpl{
 		BookRepository: bookRepository,
 		AuthorService:  authorService,
 		DB:             db,
 		Validate:       validate,
+		MiniIOClient:   minioClient,
+		Config:         cfg,
 	}
 }
 
@@ -31,6 +35,8 @@ type BookServiceImpl struct {
 	AuthorService  AuthorService
 	DB             *pgxpool.Pool
 	Validate       *validator.Validate
+	MiniIOClient   *minio.Client
+	Config         *config.Config
 }
 
 func (service *BookServiceImpl) CreateNewBook(ctx context.Context, request web.CreateBookRequest) (web.CreateBookResponse, error) {
@@ -129,7 +135,28 @@ func (service *BookServiceImpl) GetAllBooks(ctx context.Context, queries web.Que
 		return []web.GetBookResponse{}, nil
 	}
 
-	return helper.ToGetBooksResponse(books), nil
+	booksWithURL := []domain.BookWithURL{}
+
+	for _, book := range books {
+		presignedURL, err := service.MiniIOClient.PresignedGetObject(ctx, service.Config.BookBucket, book.PhotoKey, 24*time.Hour, nil)
+		if err != nil {
+			return []web.GetBookResponse{}, err
+		}
+
+		booksWithURL = append(booksWithURL, domain.BookWithURL{
+			Id:            book.Id,
+			Name:          book.Name,
+			TotalPage:     book.TotalPage,
+			AuthorId:      book.AuthorId,
+			PhotoURL:      presignedURL.String(),
+			Status:        book.Status,
+			CompletedDate: book.CompletedDate,
+			CreatedAt:     book.CreatedAt,
+			UpdatedAt:     book.UpdatedAt,
+		})
+	}
+
+	return helper.ToGetBooksResponse(booksWithURL), nil
 }
 
 func (service *BookServiceImpl) GetBookById(ctx context.Context, pathValues web.PathParamsGetBook) (web.GetBookResponse, error) {
@@ -166,7 +193,25 @@ func (service *BookServiceImpl) GetBookById(ctx context.Context, pathValues web.
 		return web.GetBookResponse{}, err
 	}
 
-	return helper.ToGetBookResponse(book), nil
+	// Create presigned URL for GET object
+	presignedURL, err := service.MiniIOClient.PresignedGetObject(ctx, service.Config.BookBucket, book.PhotoKey, 24*time.Hour, nil)
+	if err != nil {
+		return web.GetBookResponse{}, err
+	}
+
+	bookWithURL := domain.BookWithURL{
+		Id:            book.Id,
+		Name:          book.Name,
+		TotalPage:     book.TotalPage,
+		AuthorId:      book.AuthorId,
+		PhotoURL:      presignedURL.String(),
+		Status:        book.Status,
+		CompletedDate: book.CompletedDate,
+		CreatedAt:     book.CreatedAt,
+		UpdatedAt:     book.UpdatedAt,
+	}
+
+	return helper.ToGetBookResponse(bookWithURL), nil
 }
 
 func (service *BookServiceImpl) UpdateBookById(ctx context.Context, pathValues web.PathParamsUpdateBook, request web.UpdateBookRequest) (web.UpdateBookResponse, error) {

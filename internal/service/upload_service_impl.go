@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -36,8 +35,7 @@ func (service *UploadServiceImpl) GetBookPresignedURL(ctx context.Context) (web.
 	// Get the POST form key/value object:
 	url, formData, err := service.MinIOClient.PresignedPostPolicy(context.Background(), policy)
 	if err != nil {
-		fmt.Println(err)
-		return web.GetBookPresignedURLResponse{}, nil
+		return web.GetBookPresignedURLResponse{}, err
 	}
 
 	return web.GetBookPresignedURLResponse{

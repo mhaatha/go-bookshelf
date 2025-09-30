@@ -84,3 +84,30 @@ func (handler *BookHandlerImpl) GetAll(w http.ResponseWriter, r *http.Request) {
 		Data:    authorsResponse,
 	})
 }
+
+func (handler *BookHandlerImpl) GetById(w http.ResponseWriter, r *http.Request) {
+	// Get path values if any
+	pathValue := web.PathParamsGetBook{
+		Id: r.PathValue(wildcardId),
+	}
+
+	// Call the service
+	bookResponse, err := handler.BookService.GetBookById(r.Context(), pathValue)
+	if err != nil {
+		appError.ResponseServiceErrorHandler(w, err, "failed to get book by id")
+		return
+	}
+
+	// Log the info
+	slog.Info("request handled",
+		"method", r.Method,
+		"endpoint", r.URL,
+		"status", http.StatusOK,
+	)
+
+	// Write and send the response
+	helper.WriteToResponseBody(w, http.StatusOK, web.WebSuccessResponse{
+		Message: "Success get book",
+		Data:    bookResponse,
+	})
+}

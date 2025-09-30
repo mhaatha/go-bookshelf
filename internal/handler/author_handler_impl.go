@@ -80,7 +80,7 @@ func (handler *AuthorHandlerImpl) GetAll(w http.ResponseWriter, r *http.Request)
 
 	// Write and send the response
 	helper.WriteToResponseBody(w, http.StatusOK, web.WebSuccessResponse{
-		Message: "Sucess get all authors",
+		Message: "Success get all authors",
 		Data:    authorsResponse,
 	})
 }
@@ -107,7 +107,7 @@ func (handler *AuthorHandlerImpl) GetById(w http.ResponseWriter, r *http.Request
 
 	// Write and send the response
 	helper.WriteToResponseBody(w, http.StatusOK, web.WebSuccessResponse{
-		Message: "Sucess get author",
+		Message: "Success get author",
 		Data:    authorResponse,
 	})
 }

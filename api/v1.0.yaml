@@ -160,7 +160,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [name, total_page, author_id, status]
+              required: [name, total_page, author_id, photo_key, status]
               properties:
                 name:
                   type: string
@@ -171,7 +171,7 @@ paths:
                 author_id:
                   type: string
                   format: uuid
-                photo_url:
+                photo_key:
                   type: string
                   minLength: 3
                   maxLength: 255
@@ -193,7 +193,7 @@ paths:
                   message:
                     type: string
                   data:
-                    $ref: "#/components/schemas/Book"
+                    $ref: "#/components/schemas/PostAndPutBook"
     get:
       tags:
         - Book API
@@ -228,7 +228,7 @@ paths:
                   data:
                     type: array
                     items: 
-                      $ref: "#/components/schemas/Book"
+                      $ref: "#/components/schemas/GetBook"
   /api/v1/books/{id}:
     get:
       tags:
@@ -253,7 +253,7 @@ paths:
                   message:
                     type: string
                   data:
-                    $ref: "#/components/schemas/Book"
+                    $ref: "#/components/schemas/GetBook"
     put:
       tags:
         - Book API
@@ -281,7 +281,7 @@ paths:
                 author_id:
                   type: string
                   format: uuid
-                photo_url:
+                photo_key:
                   type: string
                   minLength: 3
                   maxLength: 255 
@@ -303,7 +303,7 @@ paths:
                   message:
                     type: string
                   data:
-                    $ref: "#/components/schemas/Book"
+                    $ref: "#/components/schemas/PostAndPutBook"
     delete:
       tags:
         - Book API
@@ -355,9 +355,42 @@ components:
           minLength: 3
           maxLength: 255
           nullable: true
-    Book:
+    PostAndPutBook:
       type: object
-      required: [id, name, total_page, author_id, status]
+      required: [id, name, total_page, author_id, photo_key, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 3
+          maxLength: 255
+        total_page:
+          type: number
+        author_id:
+          type: string
+          format: uuid
+        photo_key:
+          type: string
+          minLength: 3
+          maxLength: 255
+        status:
+          type: string
+          enum: [completed, reading, plan_to_read]
+        completed_date:
+          type: string
+          format: date
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    GetBook:
+      type: object
+      required: [id, name, total_page, author_id, photo_url, status]
       properties:
         id:
           type: string

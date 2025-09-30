@@ -168,3 +168,101 @@ func (service *BookServiceImpl) GetBookById(ctx context.Context, pathValues web.
 
 	return helper.ToGetBookResponse(book), nil
 }
+
+func (service *BookServiceImpl) UpdateBookById(ctx context.Context, pathValues web.PathParamsUpdateBook, request web.UpdateBookRequest) (web.UpdateBookResponse, error) {
+	// Validate path params
+	err := service.Validate.Struct(pathValues)
+	if err != nil {
+		return web.UpdateBookResponse{}, err
+	}
+
+	// Validate request body
+	err = service.Validate.Struct(request)
+	if err != nil {
+		return web.UpdateBookResponse{}, err
+	}
+
+	// Open transaction
+	tx, err := service.DB.Begin(ctx)
+	if err != nil {
+		return web.UpdateBookResponse{}, err
+	}
+	defer helper.CommitOrRollback(ctx, tx)
+
+	// errAggregate aggregates errors from user bad request
+	errAggregate := []appError.ErrAggregate{}
+
+	// Check if id is exists
+	_, err = service.BookRepository.FindById(ctx, tx, pathValues.Id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			errAggregate = append(errAggregate, appError.ErrAggregate{
+				Field:   "id",
+				Message: fmt.Sprintf("book with id '%s' is not found", pathValues.Id),
+			})
+
+			// If id is not found, return earlier
+			return web.UpdateBookResponse{}, appError.NewAppError(
+				http.StatusNotFound,
+				errAggregate,
+				fmt.Errorf("book with id '%v' is not found", pathValues.Id),
+			)
+		} else {
+			return web.UpdateBookResponse{}, err
+		}
+	}
+
+	// Check if author_id exists
+	_, err = service.AuthorService.GetAuthorById(ctx, web.PathParamsGetAuthor{Id: request.AuthorId})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			errAggregate = append(errAggregate, appError.ErrAggregate{
+				Field:   "author_id",
+				Message: fmt.Sprintf("author with id '%v' is not found", request.AuthorId),
+			})
+		} else {
+			return web.UpdateBookResponse{}, err
+		}
+	}
+
+	// Check if there is a book with the same name and the same author_id
+	err = service.BookRepository.CheckByNameAndAuthorId(ctx, tx, request.Name, request.AuthorId)
+	if err != nil {
+		errAggregate = append(errAggregate, appError.ErrAggregate{
+			Field:   "name",
+			Message: fmt.Sprintf("%v with author_id '%v' is already exists", request.Name, request.AuthorId),
+		})
+	}
+
+	if len(errAggregate) != 0 {
+		return web.UpdateBookResponse{}, appError.NewAppError(
+			http.StatusBadRequest,
+			errAggregate,
+			nil,
+		)
+	}
+
+	// Parse completed_date to time.Time manually
+	t, err := time.Parse("2006-01-02", request.CompletedDate)
+	if err != nil {
+		return web.UpdateBookResponse{}, err
+	}
+
+	book := domain.Book{
+		Id:            pathValues.Id,
+		Name:          request.Name,
+		TotalPage:     request.TotalPage,
+		AuthorId:      request.AuthorId,
+		PhotoURL:      request.PhotoURL,
+		Status:        request.Status,
+		CompletedDate: t,
+	}
+
+	// Call repository
+	book, err = service.BookRepository.Update(ctx, tx, pathValues.Id, book)
+	if err != nil {
+		return web.UpdateBookResponse{}, err
+	}
+
+	return helper.ToUpdateBookResponse(book), nil
+}

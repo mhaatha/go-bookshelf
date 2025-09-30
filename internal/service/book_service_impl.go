@@ -90,7 +90,7 @@ func (service *BookServiceImpl) CreateNewBook(ctx context.Context, request web.C
 		Name:          request.Name,
 		TotalPage:     request.TotalPage,
 		AuthorId:      request.AuthorId,
-		PhotoURL:      request.PhotoURL,
+		PhotoKey:      request.PhotoKey,
 		Status:        request.Status,
 		CompletedDate: t,
 	}
@@ -253,7 +253,7 @@ func (service *BookServiceImpl) UpdateBookById(ctx context.Context, pathValues w
 		Name:          request.Name,
 		TotalPage:     request.TotalPage,
 		AuthorId:      request.AuthorId,
-		PhotoURL:      request.PhotoURL,
+		PhotoKey:      request.PhotoKey,
 		Status:        request.Status,
 		CompletedDate: t,
 	}

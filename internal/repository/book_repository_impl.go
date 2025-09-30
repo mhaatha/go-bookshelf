@@ -20,7 +20,7 @@ type BookRepositoryImpl struct{}
 
 func (repository *BookRepositoryImpl) Save(ctx context.Context, tx pgx.Tx, book domain.Book) (domain.Book, error) {
 	sqlQuery := `
-	INSERT INTO books (id, name, total_page, author_id, photo_url, status, completed_date)
+	INSERT INTO books (id, name, total_page, author_id, photo_key, status, completed_date)
 	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	RETURNING id, created_at, updated_at
 	`
@@ -32,7 +32,7 @@ func (repository *BookRepositoryImpl) Save(ctx context.Context, tx pgx.Tx, book 
 		book.Name,
 		book.TotalPage,
 		book.AuthorId,
-		book.PhotoURL,
+		book.PhotoKey,
 		book.Status,
 		book.CompletedDate,
 	).Scan(
@@ -68,7 +68,7 @@ func (repository *BookRepositoryImpl) CheckByNameAndAuthorId(ctx context.Context
 
 func (repository *BookRepositoryImpl) FindAll(ctx context.Context, tx pgx.Tx, name, status, author_name string) ([]domain.Book, error) {
 	baseQuery := `
-	SELECT b.id, b.name, b.total_page, b.author_id, b.photo_url, 
+	SELECT b.id, b.name, b.total_page, b.author_id, b.photo_key, 
        	   b.status, b.completed_date, b.created_at, b.updated_at 
 	FROM books b
 	JOIN authors a ON b.author_id = a.id
@@ -118,7 +118,7 @@ func (repository *BookRepositoryImpl) FindAll(ctx context.Context, tx pgx.Tx, na
 			&book.Name,
 			&book.TotalPage,
 			&book.AuthorId,
-			&book.PhotoURL,
+			&book.PhotoKey,
 			&book.Status,
 			&book.CompletedDate,
 			&book.CreatedAt,
@@ -141,7 +141,7 @@ func (repository *BookRepositoryImpl) FindAll(ctx context.Context, tx pgx.Tx, na
 
 func (repository *BookRepositoryImpl) FindById(ctx context.Context, tx pgx.Tx, bookId string) (domain.Book, error) {
 	sqlQuery := `
-	SELECT name, total_page, author_id, photo_url, status, completed_date, created_at, updated_at
+	SELECT name, total_page, author_id, photo_key, status, completed_date, created_at, updated_at
 	FROM books
 	WHERE id = $1
 	`
@@ -154,7 +154,7 @@ func (repository *BookRepositoryImpl) FindById(ctx context.Context, tx pgx.Tx, b
 		&book.Name,
 		&book.TotalPage,
 		&book.AuthorId,
-		&book.PhotoURL,
+		&book.PhotoKey,
 		&book.Status,
 		&book.CompletedDate,
 		&book.CreatedAt,
@@ -170,7 +170,7 @@ func (repository *BookRepositoryImpl) FindById(ctx context.Context, tx pgx.Tx, b
 func (repository *BookRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, bookId string, book domain.Book) (domain.Book, error) {
 	sqlQuery := `
 	UPDATE books
-	SET name = $1, total_page = $2, author_id = $3, photo_url = $4, status = $5, completed_date = $6, updated_at = $7
+	SET name = $1, total_page = $2, author_id = $3, photo_key = $4, status = $5, completed_date = $6, updated_at = $7
 	WHERE id = $8
 	RETURNING created_at
 	`
@@ -183,7 +183,7 @@ func (repository *BookRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, boo
 		book.Name,
 		book.TotalPage,
 		book.AuthorId,
-		book.PhotoURL,
+		book.PhotoKey,
 		book.Status,
 		book.CompletedDate,
 		updatedAt,

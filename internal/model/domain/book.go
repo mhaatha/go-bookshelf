@@ -7,7 +7,7 @@ type Book struct {
 	Name          string    `json:"name"`
 	TotalPage     int       `json:"total_page"`
 	AuthorId      string    `json:"author_id"`
-	PhotoURL      string    `json:"photo_url,omitempty"`
+	PhotoKey      string    `json:"photo_key,omitempty"`
 	Status        string    `json:"status"`
 	CompletedDate time.Time `json:"completed_date,omitempty"`
 	CreatedAt     time.Time `json:"created_at"`

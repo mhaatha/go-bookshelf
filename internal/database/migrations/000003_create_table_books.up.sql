@@ -3,7 +3,7 @@ CREATE TABLE books (
     name VARCHAR(255) NOT NULL,
     total_page INTEGER NOT NULL,
     author_id UUID NOT NULL,
-    photo_url VARCHAR(255),
+    photo_key VARCHAR(255),
     status status NOT NULL,
     completed_date DATE,
     created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP, 

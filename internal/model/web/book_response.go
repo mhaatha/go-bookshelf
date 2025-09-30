@@ -7,7 +7,7 @@ type CreateBookResponse struct {
 	Name          string    `json:"name"`
 	TotalPage     int       `json:"total_page"`
 	AuthorId      string    `json:"author_id"`
-	PhotoURL      string    `json:"photo_url"`
+	PhotoKey      string    `json:"photo_key"`
 	Status        string    `json:"status"`
 	CompletedDate time.Time `json:"completed_date"`
 	CreatedAt     time.Time `json:"created_at"`
@@ -31,7 +31,7 @@ type UpdateBookResponse struct {
 	Name          string    `json:"name"`
 	TotalPage     int       `json:"total_page"`
 	AuthorId      string    `json:"author_id"`
-	PhotoURL      string    `json:"photo_url"`
+	PhotoKey      string    `json:"photo_key"`
 	Status        string    `json:"status"`
 	CompletedDate time.Time `json:"completed_date"`
 	CreatedAt     time.Time `json:"created_at"`

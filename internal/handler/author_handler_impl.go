@@ -156,7 +156,7 @@ func (handler *AuthorHandlerImpl) DeleteById(w http.ResponseWriter, r *http.Requ
 	// Call the service
 	err := handler.AuthorService.DeleteAuthorById(r.Context(), pathValue)
 	if err != nil {
-		appError.ResponseServiceErrorHandler(w, err, "failed to update author by id")
+		appError.ResponseServiceErrorHandler(w, err, "failed to delete author by id")
 		return
 	}
 

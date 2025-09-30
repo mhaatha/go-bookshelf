@@ -77,13 +77,13 @@ func (repository *AuthorRepositoryImpl) FindAll(ctx context.Context, tx pgx.Tx, 
 	argCount := 1
 
 	if fullName != "" {
-		conditions = append(conditions, fmt.Sprintf("full_name = $%d", argCount))
-		args = append(args, fullName)
+		conditions = append(conditions, fmt.Sprintf("full_name ILIKE $%d", argCount))
+		args = append(args, "%"+fullName+"%")
 		argCount++
 	}
 	if nationality != "" {
-		conditions = append(conditions, fmt.Sprintf("nationality = $%d", argCount))
-		args = append(args, nationality)
+		conditions = append(conditions, fmt.Sprintf("nationality ILIKE $%d", argCount))
+		args = append(args, "%"+nationality+"%")
 		argCount++
 	}
 

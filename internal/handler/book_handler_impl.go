@@ -111,3 +111,38 @@ func (handler *BookHandlerImpl) GetById(w http.ResponseWriter, r *http.Request) 
 		Data:    bookResponse,
 	})
 }
+
+func (handler *BookHandlerImpl) UpdateById(w http.ResponseWriter, r *http.Request) {
+	// Get path values if any
+	pathValue := web.PathParamsUpdateBook{
+		Id: r.PathValue(wildcardId),
+	}
+
+	// Get request body and write it to bookRequest
+	bookRequest := web.UpdateBookRequest{}
+	err := helper.ReadFromRequestBody(r, &bookRequest)
+	if err != nil {
+		appError.RequestJSONErrorHandler(w, err)
+		return
+	}
+
+	// Call the service
+	bookResponse, err := handler.BookService.UpdateBookById(r.Context(), pathValue, bookRequest)
+	if err != nil {
+		appError.ResponseServiceErrorHandler(w, err, "failed to update book by id")
+		return
+	}
+
+	// Log the info
+	slog.Info("request handled",
+		"method", r.Method,
+		"endpoint", r.URL,
+		"status", http.StatusOK,
+	)
+
+	// Write and send the response
+	helper.WriteToResponseBody(w, http.StatusCreated, web.WebSuccessResponse{
+		Message: "Book updated successfully",
+		Data:    bookResponse,
+	})
+}

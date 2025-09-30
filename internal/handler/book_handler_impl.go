@@ -146,3 +146,27 @@ func (handler *BookHandlerImpl) UpdateById(w http.ResponseWriter, r *http.Reques
 		Data:    bookResponse,
 	})
 }
+
+func (handler *BookHandlerImpl) DeleteById(w http.ResponseWriter, r *http.Request) {
+	// Get path values if any
+	pathValue := web.PathParamsDeleteBook{
+		Id: r.PathValue(wildcardId),
+	}
+
+	// Call the service
+	err := handler.BookService.DeleteBookById(r.Context(), pathValue)
+	if err != nil {
+		appError.ResponseServiceErrorHandler(w, err, "failed to delete book by id")
+		return
+	}
+
+	// Log the info
+	slog.Info("request handled",
+		"method", r.Method,
+		"endpoint", r.URL,
+		"status", http.StatusNoContent,
+	)
+
+	// Set to 204 No Content
+	w.WriteHeader(http.StatusNoContent)
+}

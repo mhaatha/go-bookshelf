@@ -103,3 +103,31 @@ func (service *BookServiceImpl) CreateNewBook(ctx context.Context, request web.C
 
 	return helper.ToCreateBookResponse(book), nil
 }
+
+func (service *BookServiceImpl) GetAllBooks(ctx context.Context, queries web.QueryParamsGetBooks) ([]web.GetBookResponse, error) {
+	// Validate queries
+	err := service.Validate.Struct(queries)
+	if err != nil {
+		return []web.GetBookResponse{}, err
+	}
+
+	// Open transaction
+	tx, err := service.DB.Begin(ctx)
+	if err != nil {
+		return []web.GetBookResponse{}, err
+	}
+	defer helper.CommitOrRollback(ctx, tx)
+
+	// Call repository
+	books, err := service.BookRepository.FindAll(ctx, tx, queries.Name, queries.Status, queries.AuthorName)
+	if err != nil {
+		return []web.GetBookResponse{}, err
+	}
+
+	// No records return []
+	if len(books) == 0 {
+		return []web.GetBookResponse{}, nil
+	}
+
+	return helper.ToGetBooksResponse(books), nil
+}

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -29,8 +28,6 @@ func (handler *BookHandlerImpl) Create(w http.ResponseWriter, r *http.Request) {
 		appError.RequestJSONErrorHandler(w, err)
 		return
 	}
-
-	fmt.Println(bookRequest)
 
 	// Call the service
 	bookResponse, err := handler.BookService.CreateNewBook(r.Context(), bookRequest)

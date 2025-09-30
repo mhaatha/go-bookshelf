@@ -8,4 +8,5 @@ import (
 
 func BookRouter(handler handler.BookHandler, mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/books", handler.Create)
+	mux.HandleFunc("GET /api/v1/books", handler.GetAll)
 }

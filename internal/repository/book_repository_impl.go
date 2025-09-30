@@ -137,3 +137,31 @@ func (repository *BookRepositoryImpl) FindAll(ctx context.Context, tx pgx.Tx, na
 
 	return books, nil
 }
+
+func (repository *BookRepositoryImpl) FindById(ctx context.Context, tx pgx.Tx, bookId string) (domain.Book, error) {
+	sqlQuery := `
+	SELECT name, total_page, author_id, photo_url, status, completed_date, created_at, updated_at
+	FROM books
+	WHERE id = $1
+	`
+
+	book := domain.Book{
+		Id: bookId,
+	}
+
+	err := tx.QueryRow(ctx, sqlQuery, bookId).Scan(
+		&book.Name,
+		&book.TotalPage,
+		&book.AuthorId,
+		&book.PhotoURL,
+		&book.Status,
+		&book.CompletedDate,
+		&book.CreatedAt,
+		&book.UpdatedAt,
+	)
+	if err != nil {
+		return domain.Book{}, err
+	}
+
+	return book, nil
+}

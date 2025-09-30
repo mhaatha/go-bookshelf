@@ -255,14 +255,6 @@ func (service *AuthorServiceImpl) DeleteAuthorById(ctx context.Context, pathValu
 		}
 	}
 
-	if len(errAggregate) != 0 {
-		return appError.NewAppError(
-			http.StatusBadRequest,
-			errAggregate,
-			nil,
-		)
-	}
-
 	// Call repository
 	err = service.AuthorRepository.Delete(ctx, tx, pathValues.Id)
 	if err != nil {

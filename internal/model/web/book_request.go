@@ -8,3 +8,9 @@ type CreateBookRequest struct {
 	Status        string `json:"status" validate:"required,bookStatus"`
 	CompletedDate string `json:"completed_date" validate:"omitempty,datetime=2006-01-02"`
 }
+
+type QueryParamsGetBooks struct {
+	Status     string `json:"status" validate:"omitempty,bookStatus"`
+	Name       string `json:"name" validate:"omitempty,min=3,max=255"`
+	AuthorName string `json:"author_name" validate:"omitempty,min=3,max=255,validName"`
+}

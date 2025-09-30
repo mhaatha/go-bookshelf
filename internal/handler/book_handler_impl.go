@@ -10,6 +10,12 @@ import (
 	"github.com/mhaatha/go-bookshelf/internal/service"
 )
 
+const (
+	queryName       = "name"
+	queryStatus     = "status"
+	queryAuthorName = "author_name"
+)
+
 func NewBookHandler(bookService service.BookService) BookHandler {
 	return &BookHandlerImpl{
 		BookService: bookService,
@@ -47,5 +53,34 @@ func (handler *BookHandlerImpl) Create(w http.ResponseWriter, r *http.Request) {
 	helper.WriteToResponseBody(w, http.StatusCreated, web.WebSuccessResponse{
 		Message: "Book created successfully",
 		Data:    bookResponse,
+	})
+}
+
+func (handler *BookHandlerImpl) GetAll(w http.ResponseWriter, r *http.Request) {
+	// Get query params if any
+	queries := web.QueryParamsGetBooks{
+		Name:       r.URL.Query().Get(queryName),
+		Status:     r.URL.Query().Get(queryStatus),
+		AuthorName: r.URL.Query().Get(queryAuthorName),
+	}
+
+	// Call the service
+	authorsResponse, err := handler.BookService.GetAllBooks(r.Context(), queries)
+	if err != nil {
+		appError.ResponseServiceErrorHandler(w, err, "failed to get books")
+		return
+	}
+
+	// Log the info
+	slog.Info("request handled",
+		"method", r.Method,
+		"endpoint", r.URL,
+		"status", http.StatusOK,
+	)
+
+	// Write and send the response
+	helper.WriteToResponseBody(w, http.StatusOK, web.WebSuccessResponse{
+		Message: "Success get all books",
+		Data:    authorsResponse,
 	})
 }

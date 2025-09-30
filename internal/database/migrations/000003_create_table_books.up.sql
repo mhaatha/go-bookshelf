@@ -5,7 +5,7 @@ CREATE TABLE books (
     author_id UUID NOT NULL,
     photo_url VARCHAR(255),
     status status NOT NULL,
-    date_complete DATE,
+    completed_date DATE,
     created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP, 
     updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

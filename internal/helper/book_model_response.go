@@ -11,7 +11,7 @@ func ToCreateBookResponse(book domain.Book) web.CreateBookResponse {
 		Name:          book.Name,
 		TotalPage:     book.TotalPage,
 		AuthorId:      book.AuthorId,
-		PhotoURL:      book.PhotoURL,
+		PhotoKey:      book.PhotoKey,
 		Status:        book.Status,
 		CompletedDate: book.CompletedDate,
 		CreatedAt:     book.CreatedAt,
@@ -19,7 +19,7 @@ func ToCreateBookResponse(book domain.Book) web.CreateBookResponse {
 	}
 }
 
-func ToGetBookResponse(book domain.Book) web.GetBookResponse {
+func ToGetBookResponse(book domain.BookWithURL) web.GetBookResponse {
 	return web.GetBookResponse{
 		Id:            book.Id,
 		Name:          book.Name,
@@ -33,7 +33,7 @@ func ToGetBookResponse(book domain.Book) web.GetBookResponse {
 	}
 }
 
-func ToGetBooksResponse(books []domain.Book) []web.GetBookResponse {
+func ToGetBooksResponse(books []domain.BookWithURL) []web.GetBookResponse {
 	var bookResponses []web.GetBookResponse
 	for _, book := range books {
 		bookResponses = append(bookResponses, ToGetBookResponse(book))
@@ -47,7 +47,7 @@ func ToUpdateBookResponse(book domain.Book) web.UpdateBookResponse {
 		Name:          book.Name,
 		TotalPage:     book.TotalPage,
 		AuthorId:      book.AuthorId,
-		PhotoURL:      book.PhotoURL,
+		PhotoKey:      book.PhotoKey,
 		Status:        book.Status,
 		CompletedDate: book.CompletedDate,
 		CreatedAt:     book.CreatedAt,

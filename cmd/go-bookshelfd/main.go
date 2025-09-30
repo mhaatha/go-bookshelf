@@ -66,7 +66,7 @@ func main() {
 
 	// Book resources
 	bookRepository := repository.NewBookRepository()
-	bookService := service.NewBookService(bookRepository, authorService, db, validate)
+	bookService := service.NewBookService(bookRepository, authorService, db, validate, minioClient, cfg)
 	bookhandler := handler.NewBookHandler(bookService)
 
 	// Book router

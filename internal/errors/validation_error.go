@@ -26,6 +26,10 @@ func TranslateValidationErrors(err error) []map[string]string {
 				msg = fmt.Sprintf("%s must not contain numbers or symbols", e.Field())
 			case "uuid":
 				msg = fmt.Sprintf("'%s' is not a valid UUID", e.Value())
+			case "bookStatus":
+				msg = "the valid value for this field are only 'completed', 'reading', and 'plan_to_read'"
+			case "datetime":
+				msg = "use YYYY-MM-DD for valid datetime"
 			default:
 				msg = fmt.Sprintf("%s is invalid", e.Field())
 			}

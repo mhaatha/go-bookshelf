@@ -14,3 +14,7 @@ type QueryParamsGetBooks struct {
 	Name       string `json:"name" validate:"omitempty,min=3,max=255"`
 	AuthorName string `json:"author_name" validate:"omitempty,min=3,max=255,validName"`
 }
+
+type PathParamsGetBook struct {
+	Id string `json:"id" validate:"omitempty,uuid"`
+}

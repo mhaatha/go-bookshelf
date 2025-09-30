@@ -48,7 +48,7 @@ func (service *AuthorServiceImpl) CreateNewAuthor(ctx context.Context, request w
 	errAggregate := []appError.ErrAggregate{}
 
 	// Check if full_name already exists
-	err = service.AuthorRepository.FindByFullName(ctx, tx, request.FullName)
+	err = service.AuthorRepository.CheckByFullName(ctx, tx, request.FullName)
 	if err != nil {
 		errAggregate = append(errAggregate, appError.ErrAggregate{
 			Field:   "full_name",
@@ -187,7 +187,7 @@ func (service *AuthorServiceImpl) UpdateAuthorById(ctx context.Context, pathValu
 	}
 
 	// Check if full_name already exists
-	err = service.AuthorRepository.FindByFullName(ctx, tx, request.FullName)
+	err = service.AuthorRepository.CheckByFullName(ctx, tx, request.FullName)
 	if err != nil {
 		errAggregate = append(errAggregate, appError.ErrAggregate{
 			Field:   "full_name",

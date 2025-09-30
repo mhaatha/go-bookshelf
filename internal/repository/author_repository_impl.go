@@ -43,7 +43,7 @@ func (repository *AuthorRepositoryImpl) Save(ctx context.Context, tx pgx.Tx, aut
 	return author, nil
 }
 
-func (repository *AuthorRepositoryImpl) FindByFullName(ctx context.Context, tx pgx.Tx, fullName string) error {
+func (repository *AuthorRepositoryImpl) CheckByFullName(ctx context.Context, tx pgx.Tx, fullName string) error {
 	sqlQuery := `
 	SELECT 1 FROM authors 
 	WHERE full_name = $1

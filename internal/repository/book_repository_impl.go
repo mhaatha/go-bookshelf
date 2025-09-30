@@ -197,3 +197,17 @@ func (repository *BookRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, boo
 
 	return book, nil
 }
+
+func (repository *BookRepositoryImpl) Delete(ctx context.Context, tx pgx.Tx, bookId string) error {
+	sqlQuery := `
+	DELETE FROM books
+	WHERE id = $1
+	`
+
+	_, err := tx.Exec(ctx, sqlQuery, bookId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

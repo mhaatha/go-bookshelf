@@ -20,5 +20,7 @@ func MinIOInit(cfg *Config) (*minio.Client, error) {
 		return nil, err
 	}
 
+	slog.Info("minio server connected successfully")
+
 	return minioClient, nil
 }

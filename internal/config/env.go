@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 	"time"
 
@@ -36,6 +37,8 @@ func LoadConfig() (*Config, error) {
 			return &Config{}, err
 		}
 	}
+
+	slog.Info("env loaded successfully")
 
 	return &Config{
 		AppEnv:               appEnv,

@@ -167,7 +167,7 @@ func (service *AuthorServiceImpl) UpdateAuthorById(ctx context.Context, pathValu
 	errAggregate := []appError.ErrAggregate{}
 
 	// Check if id is exists
-	_, err = service.AuthorRepository.FindById(ctx, tx, pathValues.Id)
+	author, err := service.AuthorRepository.FindById(ctx, tx, pathValues.Id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			errAggregate = append(errAggregate, appError.ErrAggregate{
@@ -189,10 +189,12 @@ func (service *AuthorServiceImpl) UpdateAuthorById(ctx context.Context, pathValu
 	// Check if full_name already exists
 	err = service.AuthorRepository.CheckByFullName(ctx, tx, request.FullName)
 	if err != nil {
-		errAggregate = append(errAggregate, appError.ErrAggregate{
-			Field:   "full_name",
-			Message: fmt.Sprintf("author %s is already exists", request.FullName),
-		})
+		if author.FullName != request.FullName {
+			errAggregate = append(errAggregate, appError.ErrAggregate{
+				Field:   "full_name",
+				Message: fmt.Sprintf("author %s is already exists", request.FullName),
+			})
+		}
 	}
 
 	if len(errAggregate) != 0 {
@@ -203,7 +205,7 @@ func (service *AuthorServiceImpl) UpdateAuthorById(ctx context.Context, pathValu
 		)
 	}
 
-	author := domain.Author{
+	author = domain.Author{
 		Id:          pathValues.Id,
 		FullName:    request.FullName,
 		Nationality: request.Nationality,

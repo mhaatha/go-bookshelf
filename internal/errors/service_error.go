@@ -33,7 +33,7 @@ func ResponseServiceErrorHandler(w http.ResponseWriter, err error, message strin
 	}
 
 	// Unexpected error
-	slog.Error("unexpected error", "err", err)
+	slog.Error(message, "err", err)
 
 	helper.WriteToResponseBody(w, http.StatusInternalServerError, web.WebFailedResponse{
 		Errors: http.StatusText(http.StatusInternalServerError),

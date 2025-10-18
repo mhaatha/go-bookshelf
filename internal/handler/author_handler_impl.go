@@ -141,7 +141,7 @@ func (handler *AuthorHandlerImpl) UpdateById(w http.ResponseWriter, r *http.Requ
 	)
 
 	// Write and send the response
-	helper.WriteToResponseBody(w, http.StatusCreated, web.WebSuccessResponse{
+	helper.WriteToResponseBody(w, http.StatusOK, web.WebSuccessResponse{
 		Message: "Author updated successfully",
 		Data:    authorResponse,
 	})

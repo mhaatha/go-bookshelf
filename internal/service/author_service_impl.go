@@ -70,7 +70,7 @@ func (service *AuthorServiceImpl) CreateNewAuthor(ctx context.Context, request w
 	}
 
 	// Call repository
-	author, err = service.AuthorRepository.Save(ctx, tx, author)
+	author, err = service.AuthorRepository.Save(ctx, author)
 	if err != nil {
 		return web.CreateAuthorResponse{}, err
 	}

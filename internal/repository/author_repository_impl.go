@@ -9,23 +9,36 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/mhaatha/go-bookshelf/internal/helper"
 	"github.com/mhaatha/go-bookshelf/internal/model/domain"
 )
 
-func NewAuthorRepository() AuthorRepository {
-	return &AuthorRepositoryImpl{}
+func NewAuthorRepository(db *pgxpool.Pool) AuthorRepository {
+	return &AuthorRepositoryImpl{
+		DB: db,
+	}
 }
 
-type AuthorRepositoryImpl struct{}
+type AuthorRepositoryImpl struct {
+	DB *pgxpool.Pool
+}
 
-func (repository *AuthorRepositoryImpl) Save(ctx context.Context, tx pgx.Tx, author domain.Author) (domain.Author, error) {
+func (repository *AuthorRepositoryImpl) Save(ctx context.Context, author domain.Author) (domain.Author, error) {
+	// Open transaction
+	tx, err := repository.DB.Begin(ctx)
+	if err != nil {
+		return domain.Author{}, nil
+	}
+	defer helper.CommitOrRollback(ctx, tx)
+
 	sqlQuery := `
 	INSERT INTO authors (id, full_name, nationality)
 	VALUES ($1, $2, $3)
 	RETURNING id, created_at, updated_at
 	`
 
-	err := tx.QueryRow(
+	err = tx.QueryRow(
 		ctx,
 		sqlQuery,
 		uuid.NewString(),

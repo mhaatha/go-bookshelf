@@ -50,7 +50,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Author resources
-	authorRepository := repository.NewAuthorRepository()
+	authorRepository := repository.NewAuthorRepository(db)
 	authorService := service.NewAuthorService(authorRepository, db, validate)
 	authorHandler := handler.NewAuthorHandler(authorService)
 

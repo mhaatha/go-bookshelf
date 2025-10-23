@@ -9,36 +9,27 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/mhaatha/go-bookshelf/internal/helper"
 	"github.com/mhaatha/go-bookshelf/internal/model/domain"
 )
 
-func NewAuthorRepository(db *pgxpool.Pool) AuthorRepository {
+func NewAuthorRepository(db PgxDBTX) AuthorRepository {
 	return &AuthorRepositoryImpl{
 		DB: db,
 	}
 }
 
 type AuthorRepositoryImpl struct {
-	DB *pgxpool.Pool
+	DB PgxDBTX
 }
 
 func (repository *AuthorRepositoryImpl) Save(ctx context.Context, author domain.Author) (domain.Author, error) {
-	// Open transaction
-	tx, err := repository.DB.Begin(ctx)
-	if err != nil {
-		return domain.Author{}, nil
-	}
-	defer helper.CommitOrRollback(ctx, tx)
-
 	sqlQuery := `
 	INSERT INTO authors (id, full_name, nationality)
 	VALUES ($1, $2, $3)
 	RETURNING id, created_at, updated_at
 	`
 
-	err = tx.QueryRow(
+	err := repository.DB.QueryRow(
 		ctx,
 		sqlQuery,
 		uuid.NewString(),
@@ -56,14 +47,14 @@ func (repository *AuthorRepositoryImpl) Save(ctx context.Context, author domain.
 	return author, nil
 }
 
-func (repository *AuthorRepositoryImpl) CheckByFullName(ctx context.Context, tx pgx.Tx, fullName string) error {
+func (repository *AuthorRepositoryImpl) CheckByFullName(ctx context.Context, fullName string) error {
 	sqlQuery := `
 	SELECT 1 FROM authors 
 	WHERE full_name = $1
 	`
 
 	var exists int
-	err := tx.QueryRow(ctx, sqlQuery, fullName).Scan(&exists)
+	err := repository.DB.QueryRow(ctx, sqlQuery, fullName).Scan(&exists)
 	if exists == 1 {
 		return fmt.Errorf("author %v is already exists", fullName)
 	}
@@ -78,7 +69,7 @@ func (repository *AuthorRepositoryImpl) CheckByFullName(ctx context.Context, tx 
 	return nil
 }
 
-func (repository *AuthorRepositoryImpl) FindAll(ctx context.Context, tx pgx.Tx, fullName, nationality string) ([]domain.Author, error) {
+func (repository *AuthorRepositoryImpl) FindAll(ctx context.Context, fullName, nationality string) ([]domain.Author, error) {
 	baseQuery := `
 	SELECT id, full_name, nationality, created_at, updated_at
 	FROM authors
@@ -105,7 +96,7 @@ func (repository *AuthorRepositoryImpl) FindAll(ctx context.Context, tx pgx.Tx, 
 		sqlQuery += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	rows, err := tx.Query(ctx, sqlQuery, args...)
+	rows, err := repository.DB.Query(ctx, sqlQuery, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +129,7 @@ func (repository *AuthorRepositoryImpl) FindAll(ctx context.Context, tx pgx.Tx, 
 	return authors, nil
 }
 
-func (repository *AuthorRepositoryImpl) FindById(ctx context.Context, tx pgx.Tx, authorId string) (domain.Author, error) {
+func (repository *AuthorRepositoryImpl) FindById(ctx context.Context, authorId string) (domain.Author, error) {
 	sqlQuery := `
 	SELECT full_name, nationality, created_at, updated_at
 	FROM authors
@@ -149,7 +140,7 @@ func (repository *AuthorRepositoryImpl) FindById(ctx context.Context, tx pgx.Tx,
 		Id: authorId,
 	}
 
-	err := tx.QueryRow(ctx, sqlQuery, authorId).Scan(
+	err := repository.DB.QueryRow(ctx, sqlQuery, authorId).Scan(
 		&author.FullName,
 		&author.Nationality,
 		&author.CreatedAt,
@@ -162,7 +153,7 @@ func (repository *AuthorRepositoryImpl) FindById(ctx context.Context, tx pgx.Tx,
 	return author, nil
 }
 
-func (repository *AuthorRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, authorId string, author domain.Author) (domain.Author, error) {
+func (repository *AuthorRepositoryImpl) Update(ctx context.Context, authorId string, author domain.Author) (domain.Author, error) {
 	sqlQuery := `
 	UPDATE authors
 	SET full_name = $1, nationality = $2, updated_at = $3
@@ -172,7 +163,7 @@ func (repository *AuthorRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, a
 
 	updatedAt := time.Now()
 
-	err := tx.QueryRow(
+	err := repository.DB.QueryRow(
 		ctx,
 		sqlQuery,
 		author.FullName,
@@ -189,13 +180,13 @@ func (repository *AuthorRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, a
 	return author, nil
 }
 
-func (repository *AuthorRepositoryImpl) Delete(ctx context.Context, tx pgx.Tx, authorId string) error {
+func (repository *AuthorRepositoryImpl) Delete(ctx context.Context, authorId string) error {
 	sqlQuery := `
 	DELETE FROM authors
 	WHERE id = $1
 	`
 
-	_, err := tx.Exec(ctx, sqlQuery, authorId)
+	_, err := repository.DB.Exec(ctx, sqlQuery, authorId)
 	if err != nil {
 		return err
 	}

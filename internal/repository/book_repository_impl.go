@@ -12,20 +12,24 @@ import (
 	"github.com/mhaatha/go-bookshelf/internal/model/domain"
 )
 
-func NewBookRepository() BookRepository {
-	return &BookRepositoryImpl{}
+func NewBookRepository(db PgxDBTX) BookRepository {
+	return &BookRepositoryImpl{
+		DB: db,
+	}
 }
 
-type BookRepositoryImpl struct{}
+type BookRepositoryImpl struct {
+	DB PgxDBTX
+}
 
-func (repository *BookRepositoryImpl) Save(ctx context.Context, tx pgx.Tx, book domain.Book) (domain.Book, error) {
+func (repository *BookRepositoryImpl) Save(ctx context.Context, book domain.Book) (domain.Book, error) {
 	sqlQuery := `
 	INSERT INTO books (id, name, total_page, author_id, photo_key, status, completed_date)
 	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	RETURNING id, created_at, updated_at
 	`
 
-	err := tx.QueryRow(
+	err := repository.DB.QueryRow(
 		ctx,
 		sqlQuery,
 		uuid.NewString(),
@@ -47,14 +51,14 @@ func (repository *BookRepositoryImpl) Save(ctx context.Context, tx pgx.Tx, book 
 	return book, nil
 }
 
-func (repository *BookRepositoryImpl) CheckByNameAndAuthorId(ctx context.Context, tx pgx.Tx, name, authorId string) error {
+func (repository *BookRepositoryImpl) CheckByNameAndAuthorId(ctx context.Context, name, authorId string) error {
 	sqlQuery := `
 	SELECT 1 FROM books
 	WHERE name = $1 AND author_id = $2
 	`
 
 	var exists int
-	err := tx.QueryRow(ctx, sqlQuery, name, authorId).Scan(&exists)
+	err := repository.DB.QueryRow(ctx, sqlQuery, name, authorId).Scan(&exists)
 	if exists == 1 {
 		return fmt.Errorf("book with name %v and author_id '%v' is already exists", name, authorId)
 	}
@@ -66,7 +70,7 @@ func (repository *BookRepositoryImpl) CheckByNameAndAuthorId(ctx context.Context
 	return err
 }
 
-func (repository *BookRepositoryImpl) FindAll(ctx context.Context, tx pgx.Tx, name, status, author_name string) ([]domain.Book, error) {
+func (repository *BookRepositoryImpl) FindAll(ctx context.Context, name, status, author_name string) ([]domain.Book, error) {
 	baseQuery := `
 	SELECT b.id, b.name, b.total_page, b.author_id, b.photo_key, 
        	   b.status, b.completed_date, b.created_at, b.updated_at 
@@ -102,7 +106,7 @@ func (repository *BookRepositoryImpl) FindAll(ctx context.Context, tx pgx.Tx, na
 		sqlQuery += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	rows, err := tx.Query(ctx, sqlQuery, args...)
+	rows, err := repository.DB.Query(ctx, sqlQuery, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +143,7 @@ func (repository *BookRepositoryImpl) FindAll(ctx context.Context, tx pgx.Tx, na
 	return books, nil
 }
 
-func (repository *BookRepositoryImpl) FindById(ctx context.Context, tx pgx.Tx, bookId string) (domain.Book, error) {
+func (repository *BookRepositoryImpl) FindById(ctx context.Context, bookId string) (domain.Book, error) {
 	sqlQuery := `
 	SELECT name, total_page, author_id, photo_key, status, completed_date, created_at, updated_at
 	FROM books
@@ -150,7 +154,7 @@ func (repository *BookRepositoryImpl) FindById(ctx context.Context, tx pgx.Tx, b
 		Id: bookId,
 	}
 
-	err := tx.QueryRow(ctx, sqlQuery, bookId).Scan(
+	err := repository.DB.QueryRow(ctx, sqlQuery, bookId).Scan(
 		&book.Name,
 		&book.TotalPage,
 		&book.AuthorId,
@@ -167,7 +171,7 @@ func (repository *BookRepositoryImpl) FindById(ctx context.Context, tx pgx.Tx, b
 	return book, nil
 }
 
-func (repository *BookRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, bookId string, book domain.Book) (domain.Book, error) {
+func (repository *BookRepositoryImpl) Update(ctx context.Context, bookId string, book domain.Book) (domain.Book, error) {
 	sqlQuery := `
 	UPDATE books
 	SET name = $1, total_page = $2, author_id = $3, photo_key = $4, status = $5, completed_date = $6, updated_at = $7
@@ -177,7 +181,7 @@ func (repository *BookRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, boo
 
 	updatedAt := time.Now()
 
-	err := tx.QueryRow(
+	err := repository.DB.QueryRow(
 		ctx,
 		sqlQuery,
 		book.Name,
@@ -198,13 +202,13 @@ func (repository *BookRepositoryImpl) Update(ctx context.Context, tx pgx.Tx, boo
 	return book, nil
 }
 
-func (repository *BookRepositoryImpl) Delete(ctx context.Context, tx pgx.Tx, bookId string) error {
+func (repository *BookRepositoryImpl) Delete(ctx context.Context, bookId string) error {
 	sqlQuery := `
 	DELETE FROM books
 	WHERE id = $1
 	`
 
-	_, err := tx.Exec(ctx, sqlQuery, bookId)
+	_, err := repository.DB.Exec(ctx, sqlQuery, bookId)
 	if err != nil {
 		return err
 	}

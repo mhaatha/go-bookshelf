@@ -12,7 +12,7 @@ import (
 	"github.com/mhaatha/go-bookshelf/internal/config"
 	"github.com/mhaatha/go-bookshelf/internal/database"
 	"github.com/mhaatha/go-bookshelf/internal/handler"
-	"github.com/mhaatha/go-bookshelf/internal/repository"
+	"github.com/mhaatha/go-bookshelf/internal/infrastructure/postgres"
 	"github.com/mhaatha/go-bookshelf/internal/router"
 	"github.com/mhaatha/go-bookshelf/internal/service"
 )
@@ -49,9 +49,11 @@ func main() {
 	// Main router
 	mux := http.NewServeMux()
 
+	// PostgreSQL Unit of Work
+	uow := postgres.NewPgxUnitOfWork(db)
+
 	// Author resources
-	authorRepository := repository.NewAuthorRepository(db)
-	authorService := service.NewAuthorService(authorRepository, db, validate)
+	authorService := service.NewAuthorService(uow, validate)
 	authorHandler := handler.NewAuthorHandler(authorService)
 
 	// Author router
@@ -65,8 +67,7 @@ func main() {
 	router.UploadRouter(uploadHandler, mux)
 
 	// Book resources
-	bookRepository := repository.NewBookRepository()
-	bookService := service.NewBookService(bookRepository, authorService, db, validate, minioClient, cfg)
+	bookService := service.NewBookService(uow, authorService, validate, minioClient, cfg)
 	bookhandler := handler.NewBookHandler(bookService)
 
 	// Book router

@@ -9,34 +9,30 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mhaatha/go-bookshelf/internal/config"
 	appError "github.com/mhaatha/go-bookshelf/internal/errors"
 	"github.com/mhaatha/go-bookshelf/internal/helper"
 	"github.com/mhaatha/go-bookshelf/internal/model/domain"
 	"github.com/mhaatha/go-bookshelf/internal/model/web"
-	"github.com/mhaatha/go-bookshelf/internal/repository"
 	"github.com/minio/minio-go/v7"
 )
 
-func NewBookService(bookRepository repository.BookRepository, authorService AuthorService, db *pgxpool.Pool, validate *validator.Validate, minioClient *minio.Client, cfg *config.Config) BookService {
+func NewBookService(uow UnitOfWork, authorService AuthorService, validate *validator.Validate, minioClient *minio.Client, cfg *config.Config) BookService {
 	return &BookServiceImpl{
-		BookRepository: bookRepository,
-		AuthorService:  authorService,
-		DB:             db,
-		Validate:       validate,
-		MiniIOClient:   minioClient,
-		Config:         cfg,
+		UoW:           uow,
+		AuthorService: authorService,
+		Validate:      validate,
+		MiniIOClient:  minioClient,
+		Config:        cfg,
 	}
 }
 
 type BookServiceImpl struct {
-	BookRepository repository.BookRepository
-	AuthorService  AuthorService
-	DB             *pgxpool.Pool
-	Validate       *validator.Validate
-	MiniIOClient   *minio.Client
-	Config         *config.Config
+	UoW           UnitOfWork
+	AuthorService AuthorService
+	Validate      *validator.Validate
+	MiniIOClient  *minio.Client
+	Config        *config.Config
 }
 
 func (service *BookServiceImpl) CreateNewBook(ctx context.Context, request web.CreateBookRequest) (web.CreateBookResponse, error) {
@@ -47,14 +43,27 @@ func (service *BookServiceImpl) CreateNewBook(ctx context.Context, request web.C
 	}
 
 	// Open transaction
-	tx, err := service.DB.Begin(ctx)
+	tx, err := service.UoW.Begin(ctx)
 	if err != nil {
 		return web.CreateBookResponse{}, err
 	}
-	defer helper.CommitOrRollback(ctx, tx)
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback(ctx)
+			panic(r)
+		}
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
 
 	// errAggregate aggregates errors from user bad request
 	errAggregate := []appError.ErrAggregate{}
+
+	// It creates a new instance of BookRepository
+	bookRepo := tx.GetBookRepository()
 
 	// Check if author_id exists
 	_, err = service.AuthorService.GetAuthorById(ctx, web.PathParamsGetAuthor{Id: request.AuthorId})
@@ -70,7 +79,7 @@ func (service *BookServiceImpl) CreateNewBook(ctx context.Context, request web.C
 	}
 
 	// Check if there is a book with the same name and the same author_id
-	err = service.BookRepository.CheckByNameAndAuthorId(ctx, tx, request.Name, request.AuthorId)
+	err = bookRepo.CheckByNameAndAuthorId(ctx, request.Name, request.AuthorId)
 	if err != nil {
 		errAggregate = append(errAggregate, appError.ErrAggregate{
 			Field:   "name",
@@ -102,7 +111,7 @@ func (service *BookServiceImpl) CreateNewBook(ctx context.Context, request web.C
 	}
 
 	// Call repository
-	book, err = service.BookRepository.Save(ctx, tx, book)
+	book, err = bookRepo.Save(ctx, book)
 	if err != nil {
 		return web.CreateBookResponse{}, err
 	}
@@ -118,14 +127,27 @@ func (service *BookServiceImpl) GetAllBooks(ctx context.Context, queries web.Que
 	}
 
 	// Open transaction
-	tx, err := service.DB.Begin(ctx)
+	tx, err := service.UoW.Begin(ctx)
 	if err != nil {
 		return []web.GetBookResponse{}, err
 	}
-	defer helper.CommitOrRollback(ctx, tx)
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback(ctx)
+			panic(r)
+		}
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
+
+	// It creates a new instance of BookRepository
+	bookRepo := tx.GetBookRepository()
 
 	// Call repository
-	books, err := service.BookRepository.FindAll(ctx, tx, queries.Name, queries.Status, queries.AuthorName)
+	books, err := bookRepo.FindAll(ctx, queries.Name, queries.Status, queries.AuthorName)
 	if err != nil {
 		return []web.GetBookResponse{}, err
 	}
@@ -167,16 +189,30 @@ func (service *BookServiceImpl) GetBookById(ctx context.Context, pathValues web.
 	}
 
 	// Open transcation
-	tx, err := service.DB.Begin(ctx)
+	tx, err := service.UoW.Begin(ctx)
 	if err != nil {
 		return web.GetBookResponse{}, err
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback(ctx)
+			panic(r)
+		}
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
 
 	// errAggregate aggregates errors from user bad request
 	errAggregate := []appError.ErrAggregate{}
 
+	// It creates a new instance of BookRepository
+	bookRepo := tx.GetBookRepository()
+
 	// Call repository
-	book, err := service.BookRepository.FindById(ctx, tx, pathValues.Id)
+	book, err := bookRepo.FindById(ctx, pathValues.Id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			errAggregate = append(errAggregate, appError.ErrAggregate{
@@ -228,17 +264,30 @@ func (service *BookServiceImpl) UpdateBookById(ctx context.Context, pathValues w
 	}
 
 	// Open transaction
-	tx, err := service.DB.Begin(ctx)
+	tx, err := service.UoW.Begin(ctx)
 	if err != nil {
 		return web.UpdateBookResponse{}, err
 	}
-	defer helper.CommitOrRollback(ctx, tx)
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback(ctx)
+			panic(r)
+		}
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
 
 	// errAggregate aggregates errors from user bad request
 	errAggregate := []appError.ErrAggregate{}
 
+	// It creates a new instance of BookRepository
+	bookRepo := tx.GetBookRepository()
+
 	// Check if id is exists
-	_, err = service.BookRepository.FindById(ctx, tx, pathValues.Id)
+	_, err = bookRepo.FindById(ctx, pathValues.Id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			errAggregate = append(errAggregate, appError.ErrAggregate{
@@ -271,7 +320,7 @@ func (service *BookServiceImpl) UpdateBookById(ctx context.Context, pathValues w
 	}
 
 	// Check if there is a book with the same name and the same author_id
-	err = service.BookRepository.CheckByNameAndAuthorId(ctx, tx, request.Name, request.AuthorId)
+	err = bookRepo.CheckByNameAndAuthorId(ctx, request.Name, request.AuthorId)
 	if err != nil {
 		errAggregate = append(errAggregate, appError.ErrAggregate{
 			Field:   "name",
@@ -304,7 +353,7 @@ func (service *BookServiceImpl) UpdateBookById(ctx context.Context, pathValues w
 	}
 
 	// Call repository
-	book, err = service.BookRepository.Update(ctx, tx, pathValues.Id, book)
+	book, err = bookRepo.Update(ctx, pathValues.Id, book)
 	if err != nil {
 		return web.UpdateBookResponse{}, err
 	}
@@ -320,17 +369,30 @@ func (service *BookServiceImpl) DeleteBookById(ctx context.Context, pathValues w
 	}
 
 	// Open transaction
-	tx, err := service.DB.Begin(ctx)
+	tx, err := service.UoW.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer helper.CommitOrRollback(ctx, tx)
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback(ctx)
+			panic(r)
+		}
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
 
 	// errAggregate aggregates errors from user bad request
 	errAggregate := []appError.ErrAggregate{}
 
+	// It creates a new instance of BookRepository
+	bookRepo := tx.GetBookRepository()
+
 	// Check if id is exists
-	_, err = service.BookRepository.FindById(ctx, tx, pathValues.Id)
+	_, err = bookRepo.FindById(ctx, pathValues.Id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			errAggregate = append(errAggregate, appError.ErrAggregate{
@@ -350,7 +412,7 @@ func (service *BookServiceImpl) DeleteBookById(ctx context.Context, pathValues w
 	}
 
 	// Call repository
-	err = service.BookRepository.Delete(ctx, tx, pathValues.Id)
+	err = bookRepo.Delete(ctx, pathValues.Id)
 	if err != nil {
 		return err
 	}

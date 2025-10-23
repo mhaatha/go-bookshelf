@@ -8,26 +8,22 @@ import (
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/jackc/pgx/v5/pgxpool"
 	appError "github.com/mhaatha/go-bookshelf/internal/errors"
 	"github.com/mhaatha/go-bookshelf/internal/helper"
 	"github.com/mhaatha/go-bookshelf/internal/model/domain"
 	"github.com/mhaatha/go-bookshelf/internal/model/web"
-	"github.com/mhaatha/go-bookshelf/internal/repository"
 )
 
-func NewAuthorService(authorRepository repository.AuthorRepository, db *pgxpool.Pool, validate *validator.Validate) AuthorService {
+func NewAuthorService(uow UnitOfWork, validate *validator.Validate) AuthorService {
 	return &AuthorServiceImpl{
-		AuthorRepository: authorRepository,
-		DB:               db,
-		Validate:         validate,
+		UoW:      uow,
+		Validate: validate,
 	}
 }
 
 type AuthorServiceImpl struct {
-	AuthorRepository repository.AuthorRepository
-	DB               *pgxpool.Pool
-	Validate         *validator.Validate
+	UoW      UnitOfWork
+	Validate *validator.Validate
 }
 
 func (service *AuthorServiceImpl) CreateNewAuthor(ctx context.Context, request web.CreateAuthorRequest) (web.CreateAuthorResponse, error) {
@@ -38,17 +34,30 @@ func (service *AuthorServiceImpl) CreateNewAuthor(ctx context.Context, request w
 	}
 
 	// Open transaction
-	tx, err := service.DB.Begin(ctx)
+	tx, err := service.UoW.Begin(ctx)
 	if err != nil {
 		return web.CreateAuthorResponse{}, err
 	}
-	defer helper.CommitOrRollback(ctx, tx)
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback(ctx)
+			panic(r)
+		}
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
 
 	// errAggregate aggregates errors from user bad request
 	errAggregate := []appError.ErrAggregate{}
 
+	// It creates a new instance of AuthorRepository
+	authorRepo := tx.GetAuthorRepository()
+
 	// Check if full_name already exists
-	err = service.AuthorRepository.CheckByFullName(ctx, tx, request.FullName)
+	err = authorRepo.CheckByFullName(ctx, request.FullName)
 	if err != nil {
 		errAggregate = append(errAggregate, appError.ErrAggregate{
 			Field:   "full_name",
@@ -70,7 +79,7 @@ func (service *AuthorServiceImpl) CreateNewAuthor(ctx context.Context, request w
 	}
 
 	// Call repository
-	author, err = service.AuthorRepository.Save(ctx, author)
+	author, err = authorRepo.Save(ctx, author)
 	if err != nil {
 		return web.CreateAuthorResponse{}, err
 	}
@@ -86,14 +95,27 @@ func (service *AuthorServiceImpl) GetAllAuthors(ctx context.Context, queries web
 	}
 
 	// Open transaction
-	tx, err := service.DB.Begin(ctx)
+	tx, err := service.UoW.Begin(ctx)
 	if err != nil {
-		return []web.GetAuthorResponse{}, err
+		return nil, err
 	}
-	defer helper.CommitOrRollback(ctx, tx)
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback(ctx)
+			panic(r)
+		}
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
+
+	// It creates a new instance of AuthorRepository
+	authorRepo := tx.GetAuthorRepository()
 
 	// Call repository
-	authors, err := service.AuthorRepository.FindAll(ctx, tx, queries.FullName, queries.Nationality)
+	authors, err := authorRepo.FindAll(ctx, queries.FullName, queries.Nationality)
 	if err != nil {
 		return []web.GetAuthorResponse{}, err
 	}
@@ -113,17 +135,31 @@ func (service *AuthorServiceImpl) GetAuthorById(ctx context.Context, pathValues 
 		return web.GetAuthorResponse{}, err
 	}
 
-	// Open transcation
-	tx, err := service.DB.Begin(ctx)
+	// Open transaction
+	tx, err := service.UoW.Begin(ctx)
 	if err != nil {
 		return web.GetAuthorResponse{}, err
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback(ctx)
+			panic(r)
+		}
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
 
 	// errAggregate aggregates errors from user bad request
 	errAggregate := []appError.ErrAggregate{}
 
+	// It creates a new instance of AuthorRepository
+	authorRepo := tx.GetAuthorRepository()
+
 	// Call repository
-	author, err := service.AuthorRepository.FindById(ctx, tx, pathValues.Id)
+	author, err := authorRepo.FindById(ctx, pathValues.Id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			errAggregate = append(errAggregate, appError.ErrAggregate{
@@ -157,17 +193,30 @@ func (service *AuthorServiceImpl) UpdateAuthorById(ctx context.Context, pathValu
 	}
 
 	// Open transaction
-	tx, err := service.DB.Begin(ctx)
+	tx, err := service.UoW.Begin(ctx)
 	if err != nil {
 		return web.UpdateAuthorResponse{}, err
 	}
-	defer helper.CommitOrRollback(ctx, tx)
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback(ctx)
+			panic(r)
+		}
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
 
 	// errAggregate aggregates errors from user bad request
 	errAggregate := []appError.ErrAggregate{}
 
+	// It creates a new instance of AuthorRepository
+	authorRepo := tx.GetAuthorRepository()
+
 	// Check if id is exists
-	author, err := service.AuthorRepository.FindById(ctx, tx, pathValues.Id)
+	author, err := authorRepo.FindById(ctx, pathValues.Id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			errAggregate = append(errAggregate, appError.ErrAggregate{
@@ -187,7 +236,7 @@ func (service *AuthorServiceImpl) UpdateAuthorById(ctx context.Context, pathValu
 	}
 
 	// Check if full_name already exists
-	err = service.AuthorRepository.CheckByFullName(ctx, tx, request.FullName)
+	err = authorRepo.CheckByFullName(ctx, request.FullName)
 	if err != nil {
 		if author.FullName != request.FullName {
 			errAggregate = append(errAggregate, appError.ErrAggregate{
@@ -212,7 +261,7 @@ func (service *AuthorServiceImpl) UpdateAuthorById(ctx context.Context, pathValu
 	}
 
 	// Call repository
-	author, err = service.AuthorRepository.Update(ctx, tx, pathValues.Id, author)
+	author, err = authorRepo.Update(ctx, pathValues.Id, author)
 	if err != nil {
 		return web.UpdateAuthorResponse{}, err
 	}
@@ -228,17 +277,30 @@ func (service *AuthorServiceImpl) DeleteAuthorById(ctx context.Context, pathValu
 	}
 
 	// Open transaction
-	tx, err := service.DB.Begin(ctx)
+	tx, err := service.UoW.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer helper.CommitOrRollback(ctx, tx)
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback(ctx)
+			panic(r)
+		}
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
 
 	// errAggregate aggregates errors from user bad request
 	errAggregate := []appError.ErrAggregate{}
 
+	// It creates a new instance of AuthorRepository
+	authorRepo := tx.GetAuthorRepository()
+
 	// Check if id is exists
-	_, err = service.AuthorRepository.FindById(ctx, tx, pathValues.Id)
+	_, err = authorRepo.FindById(ctx, pathValues.Id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			errAggregate = append(errAggregate, appError.ErrAggregate{
@@ -258,7 +320,7 @@ func (service *AuthorServiceImpl) DeleteAuthorById(ctx context.Context, pathValu
 	}
 
 	// Call repository
-	err = service.AuthorRepository.Delete(ctx, tx, pathValues.Id)
+	err = authorRepo.Delete(ctx, pathValues.Id)
 	if err != nil {
 		return err
 	}

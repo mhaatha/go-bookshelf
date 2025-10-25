@@ -37,7 +37,11 @@ func (m *MockAuthorService) CreateNewAuthor(ctx context.Context, request web.Cre
 }
 
 func (m *MockAuthorService) GetAllAuthors(ctx context.Context, queris web.QueryParamsGetAuthors) ([]web.GetAuthorResponse, error) {
-	return nil, nil
+	if m.MockError != nil {
+		return m.MockGetAllResponse, m.MockError
+	}
+
+	return m.MockGetAllResponse, nil
 }
 
 func (m *MockAuthorService) GetAuthorById(ctx context.Context, pathValues web.PathParamsGetAuthor) (web.GetAuthorResponse, error) {
@@ -109,6 +113,8 @@ func TestAuthorCreateHandler(t *testing.T) {
 			if val["nationality"] != expectedServiceResponse.Nationality {
 				t.Errorf("expected %s as nationality but got %s", expectedServiceResponse.Nationality, val["nationality"])
 			}
+		} else {
+			t.Error("val should be true but got false")
 		}
 
 		// Check actual request body that has been parsed in service
@@ -201,7 +207,11 @@ func TestAuthorCreateHandler(t *testing.T) {
 						if val["message"] != c.ErrMessage {
 							t.Errorf("expected error message is %s but got %s", c.ErrMessage, val["message"])
 						}
+					} else {
+						t.Error("val should be true but got false")
 					}
+				} else {
+					t.Error("errorList should be true but got false")
 				}
 			})
 		}
@@ -291,7 +301,11 @@ func TestAuthorCreateHandler(t *testing.T) {
 						if val["message"] != c.ErrMessage {
 							t.Errorf("expected error message is %s but got %s", c.ErrMessage, val["message"])
 						}
+					} else {
+						t.Error("val should be true but got false")
 					}
+				} else {
+					t.Error("errorList should be true but got false")
 				}
 			})
 		}
@@ -347,7 +361,11 @@ func TestAuthorCreateHandler(t *testing.T) {
 				if val["message"] != "author Leila S. Chudori is already exists" {
 					t.Errorf("expected error message is %s but got %s", "author Leila S. Chudori is already exists", val["message"])
 				}
+			} else {
+				t.Error("val should be true but got false")
 			}
+		} else {
+			t.Error("errorList should be true but got false")
 		}
 	})
 
@@ -379,6 +397,8 @@ func TestAuthorCreateHandler(t *testing.T) {
 			if val != "Invalid JSON payload" {
 				t.Errorf("expected %s but got %s", "Invalid JSON payload", val)
 			}
+		} else {
+			t.Error("val should be true but got false")
 		}
 	})
 }
@@ -443,6 +463,8 @@ func TestAuthorGetAllHandler(t *testing.T) {
 				if val["nationality"] != expectedServiceResponse[0].Nationality {
 					t.Errorf("expected %s as nationality but got %s", expectedServiceResponse[0].Nationality, val["nationality"])
 				}
+			} else {
+				t.Error("val should be true but got false")
 			}
 
 			// Second data from the JSON array
@@ -459,7 +481,11 @@ func TestAuthorGetAllHandler(t *testing.T) {
 				if val["nationality"] != expectedServiceResponse[1].Nationality {
 					t.Errorf("expected %s as nationality but got %s", expectedServiceResponse[1].Nationality, val["nationality"])
 				}
+			} else {
+				t.Error("val should be true but got false")
 			}
+		} else {
+			t.Error("dataList should be true but got false")
 		}
 	})
 }

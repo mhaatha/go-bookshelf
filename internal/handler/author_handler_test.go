@@ -553,6 +553,95 @@ func TestAuthorGetAllHandler(t *testing.T) {
 			t.Errorf("expected %+v as query params but got %+v", expectedQueries, mockService.GetAllCalledWithQuery)
 		}
 	})
+
+	t.Run("get authors by nationality query parameter", func(t *testing.T) {
+		expectedQueries := web.QueryParamsGetAuthors{
+			Nationality: "Indonesia",
+		}
+		expectedServiceResponse := []web.GetAuthorResponse{
+			{
+				Id:          "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+				FullName:    "Leila S. Chudori",
+				Nationality: "Indonesia",
+			},
+			{
+				Id:          "84a069f3-2620-4da4-8bb5-5c39bbe7cda7",
+				FullName:    "Henry Manampiring",
+				Nationality: "Indonesia",
+			},
+		}
+
+		mockService := &MockAuthorService{
+			MockGetAllResponse:    expectedServiceResponse,
+			GetAllCalledWithQuery: expectedQueries,
+		}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/authors?nationality=Indonesia", nil)
+		res := httptest.NewRecorder()
+
+		handler.GetAll(res, req)
+
+		// Check status code
+		if res.Code != http.StatusOK {
+			t.Errorf("expected status code of %d but got %d", http.StatusOK, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebSuccessResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body data
+		dataList, ok := actualResponseBody.Data.([]interface{})
+		if ok {
+			// First data from the JSON array
+			val, ok := dataList[0].(map[string]interface{})
+			if ok {
+				if val["id"] != expectedServiceResponse[0].Id {
+					t.Errorf("expected %s as id but got %s", expectedServiceResponse[0].Id, val["id"])
+				}
+
+				if val["full_name"] != expectedServiceResponse[0].FullName {
+					t.Errorf("expected %s as full_name but got %s", expectedServiceResponse[0].FullName, val["full_name"])
+				}
+
+				if val["nationality"] != expectedServiceResponse[0].Nationality {
+					t.Errorf("expected %s as nationality but got %s", expectedServiceResponse[0].Nationality, val["nationality"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+
+			// Second data from the JSON array
+			val, ok = dataList[1].(map[string]interface{})
+			if ok {
+				if val["id"] != expectedServiceResponse[1].Id {
+					t.Errorf("expected %s as id but got %s", expectedServiceResponse[1].Id, val["id"])
+				}
+
+				if val["full_name"] != expectedServiceResponse[1].FullName {
+					t.Errorf("expected %s as full_name but got %s", expectedServiceResponse[1].FullName, val["full_name"])
+				}
+
+				if val["nationality"] != expectedServiceResponse[1].Nationality {
+					t.Errorf("expected %s as nationality but got %s", expectedServiceResponse[1].Nationality, val["nationality"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("dataList should be true but got false")
+		}
+
+		// Check actual queries params that has been parsed in service
+		if !reflect.DeepEqual(mockService.GetAllCalledWithQuery, expectedQueries) {
+			t.Errorf("expected %+v as query params but got %+v", expectedQueries, mockService.GetAllCalledWithQuery)
+		}
+	})
 }
 
 // Helper functions

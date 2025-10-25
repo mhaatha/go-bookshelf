@@ -20,7 +20,10 @@ import (
 type MockAuthorService struct {
 	CreateCalledWithRequest web.CreateAuthorRequest
 	MockCreateResponse      web.CreateAuthorResponse
-	MockError               error
+
+	MockGetAllResponse []web.GetAuthorResponse
+
+	MockError error
 }
 
 func (m *MockAuthorService) CreateNewAuthor(ctx context.Context, request web.CreateAuthorRequest) (web.CreateAuthorResponse, error) {
@@ -380,6 +383,88 @@ func TestAuthorCreateHandler(t *testing.T) {
 	})
 }
 
+func TestAuthorGetAllHandler(t *testing.T) {
+	t.Run("get all authors", func(t *testing.T) {
+		expectedServiceResponse := []web.GetAuthorResponse{
+			{
+				Id:          "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+				FullName:    "Leila S. Chudori",
+				Nationality: "Indonesia",
+			},
+			{
+				Id:          "84a069f3-2620-4da4-8bb5-5c39bbe7cda7",
+				FullName:    "Henry Manampiring",
+				Nationality: "Indonesia",
+			},
+		}
+
+		mockService := &MockAuthorService{
+			MockGetAllResponse: expectedServiceResponse,
+		}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/authors", nil)
+		res := httptest.NewRecorder()
+
+		handler.GetAll(res, req)
+
+		// Check status code
+		if res.Code != http.StatusOK {
+			t.Errorf("expected status code of %d but got %d", http.StatusOK, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebSuccessResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body message
+		if actualResponseBody.Message != "Success get all authors" {
+			t.Errorf("expected %s as response message but got %s", "Success get all authors", actualResponseBody.Message)
+		}
+
+		// Check response body data
+		dataList, ok := actualResponseBody.Data.([]interface{})
+		if ok {
+			// First data from the JSON array
+			val, ok := dataList[0].(map[string]interface{})
+			if ok {
+				if val["id"] != expectedServiceResponse[0].Id {
+					t.Errorf("expected %s as id but got %s", expectedServiceResponse[0].Id, val["id"])
+				}
+
+				if val["full_name"] != expectedServiceResponse[0].FullName {
+					t.Errorf("expected %s as full_name but got %s", expectedServiceResponse[0].FullName, val["full_name"])
+				}
+
+				if val["nationality"] != expectedServiceResponse[0].Nationality {
+					t.Errorf("expected %s as nationality but got %s", expectedServiceResponse[0].Nationality, val["nationality"])
+				}
+			}
+
+			// Second data from the JSON array
+			val, ok = dataList[1].(map[string]interface{})
+			if ok {
+				if val["id"] != expectedServiceResponse[1].Id {
+					t.Errorf("expected %s as id but got %s", expectedServiceResponse[1].Id, val["id"])
+				}
+
+				if val["full_name"] != expectedServiceResponse[1].FullName {
+					t.Errorf("expected %s as full_name but got %s", expectedServiceResponse[1].FullName, val["full_name"])
+				}
+
+				if val["nationality"] != expectedServiceResponse[1].Nationality {
+					t.Errorf("expected %s as nationality but got %s", expectedServiceResponse[1].Nationality, val["nationality"])
+				}
+			}
+		}
+	})
+}
+
+// Helper functions
 func toJSON(data interface{}) io.Reader {
 	jsonBytes, _ := json.Marshal(data)
 	return bytes.NewReader(jsonBytes)

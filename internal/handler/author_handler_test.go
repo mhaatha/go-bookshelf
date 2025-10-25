@@ -709,6 +709,96 @@ func TestAuthorGetAllHandler(t *testing.T) {
 			t.Errorf("expected %+v as query params but got %+v", expectedQueries, mockService.GetAllCalledWithQuery)
 		}
 	})
+
+	t.Run("get authors with invalid full_name query parameter", func(t *testing.T) {
+		cases := []struct {
+			Name       string
+			Query      web.QueryParamsGetAuthors
+			ErrField   string
+			ErrMessage string
+		}{
+			{
+				Name: "minimum length",
+				Query: web.QueryParamsGetAuthors{
+					FullName: "Hi",
+				},
+				ErrField:   "full_name",
+				ErrMessage: "full_name must be at least 3 characters",
+			},
+			{
+				Name: "maximum length",
+				Query: web.QueryParamsGetAuthors{
+					FullName: "Di tengah derasnya arus teknologi modern kemampuan manusia untuk beradaptasi berpikir kritis dan berinovasi menjadi penentu utama dalam menghadapi tantangan global yang terus berkembang tanpa henti di segala bidang kehidupan manusia saat ini terutama dalam bidang teknologi.",
+				},
+				ErrField:   "full_name",
+				ErrMessage: "full_name must be at most 255 characters",
+			},
+			{
+				Name: "valid full_name",
+				Query: web.QueryParamsGetAuthors{
+					FullName: "Invalid FullName #123",
+				},
+				ErrField:   "full_name",
+				ErrMessage: "full_name must not contain numbers or symbols",
+			},
+		}
+
+		validate := config.ValidatorInit()
+		for _, c := range cases {
+			t.Run(c.Name, func(t *testing.T) {
+				queries := web.QueryParamsGetAuthors{
+					FullName: c.Query.FullName,
+				}
+				expectedServiceError := validate.Struct(queries)
+
+				mockService := &MockAuthorService{
+					MockError:             expectedServiceError,
+					GetAllCalledWithQuery: queries,
+				}
+
+				handler := NewAuthorHandler(mockService)
+
+				req := httptest.NewRequest(http.MethodGet, "/api/v1/authors", nil)
+				q := req.URL.Query()
+				q.Add("full_name", c.Query.FullName)
+				req.URL.RawQuery = q.Encode()
+
+				res := httptest.NewRecorder()
+
+				handler.GetAll(res, req)
+
+				// Check status code
+				if res.Code != http.StatusBadRequest {
+					t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+				}
+
+				// Get the actual response
+				var actualResponseBody web.WebFailedResponse
+				err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+				if err != nil {
+					t.Fatalf("error when parsing res body: %v", err)
+				}
+
+				errorList, ok := actualResponseBody.Errors.([]interface{})
+				if ok {
+					val, ok := errorList[0].(map[string]interface{})
+					if ok {
+						if val["field"] != c.ErrField {
+							t.Errorf("expected error field is %s but got %s", c.ErrField, val["field"])
+						}
+
+						if val["message"] != c.ErrMessage {
+							t.Errorf("expected error message is %s but got %s", c.ErrMessage, val["message"])
+						}
+					} else {
+						t.Error("val should be true but got false")
+					}
+				} else {
+					t.Error("errorList should be true but got false")
+				}
+			})
+		}
+	})
 }
 
 // Helper functions

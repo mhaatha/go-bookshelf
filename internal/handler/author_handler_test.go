@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -343,6 +344,37 @@ func TestAuthorCreateHandler(t *testing.T) {
 				if val["message"] != "author Leila S. Chudori is already exists" {
 					t.Errorf("expected error message is %s but got %s", "author Leila S. Chudori is already exists", val["message"])
 				}
+			}
+		}
+	})
+
+	t.Run("create author with invalid JSON payload", func(t *testing.T) {
+		invalidJSONPayload := `{"full_name":}`
+		mockService := &MockAuthorService{}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", strings.NewReader(invalidJSONPayload))
+		res := httptest.NewRecorder()
+
+		handler.Create(res, req)
+
+		// Check status code
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		val, ok := actualResponseBody.Errors.(string)
+		if ok {
+			if val != "Invalid JSON payload" {
+				t.Errorf("expected %s but got %s", "Invalid JSON payload", val)
 			}
 		}
 	})

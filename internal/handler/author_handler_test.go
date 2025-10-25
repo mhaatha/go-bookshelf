@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -959,6 +960,66 @@ func TestAuthorGetByIdHandler(t *testing.T) {
 			}
 		} else {
 			t.Error("val should be true but got false")
+		}
+
+		// Check actual path values that has been parsed in service
+		if !reflect.DeepEqual(mockService.GetByIdCalledWithPathValue, pathValue) {
+			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.GetByIdCalledWithPathValue)
+		}
+	})
+
+	t.Run("get author by id with invalid UUID", func(t *testing.T) {
+		invalidUUID := "InvalidUUID"
+
+		pathValue := web.PathParamsGetAuthor{
+			Id: invalidUUID,
+		}
+		validate := config.ValidatorInit()
+		expectedServiceError := validate.Struct(pathValue)
+
+		mockService := &MockAuthorService{
+			MockError: expectedServiceError,
+		}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/authors/%s", invalidUUID), nil)
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", invalidUUID)
+
+		handler.GetById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body data
+		errorList, ok := actualResponseBody.Errors.([]interface{})
+		if ok {
+			val, ok := errorList[0].(map[string]interface{})
+			if ok {
+				if val["field"] != "id" {
+					t.Errorf("expected %s as field name but got %s", "id", val["field"])
+				}
+
+				if val["message"] != fmt.Sprintf("'%s' is not a valid UUID", invalidUUID) {
+					t.Errorf("expected %s as message but got %s", fmt.Sprintf("'%s' is not a valid UUID", invalidUUID), val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("errorList should be true but got false")
 		}
 
 		// Check actual path values that has been parsed in service

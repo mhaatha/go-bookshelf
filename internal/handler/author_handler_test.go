@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/mhaatha/go-bookshelf/internal/config"
+	appError "github.com/mhaatha/go-bookshelf/internal/errors"
 	"github.com/mhaatha/go-bookshelf/internal/model/web"
 )
 
@@ -289,6 +290,60 @@ func TestAuthorCreateHandler(t *testing.T) {
 					}
 				}
 			})
+		}
+	})
+
+	t.Run("create author with existing full_name", func(t *testing.T) {
+		authorRequest := web.CreateAuthorRequest{
+			FullName:    "Leila S. Chudori",
+			Nationality: "Indonesia",
+		}
+		expectedServiceError := []appError.ErrAggregate{
+			{
+				Field:   "full_name",
+				Message: "author Leila S. Chudori is already exists",
+			},
+		}
+
+		mockService := &MockAuthorService{
+			MockError: appError.NewAppError(
+				http.StatusBadRequest,
+				expectedServiceError,
+				nil,
+			),
+		}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", toJSON(authorRequest))
+		res := httptest.NewRecorder()
+
+		handler.Create(res, req)
+
+		// Check status code
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		errorList, ok := actualResponseBody.Errors.([]interface{})
+		if ok {
+			val, ok := errorList[0].(map[string]interface{})
+			if ok {
+				if val["field"] != "full_name" {
+					t.Errorf("expected error field is %s but got %s", "full_name", val["field"])
+				}
+
+				if val["message"] != "author Leila S. Chudori is already exists" {
+					t.Errorf("expected error message is %s but got %s", "author Leila S. Chudori is already exists", val["message"])
+				}
+			}
 		}
 	})
 }

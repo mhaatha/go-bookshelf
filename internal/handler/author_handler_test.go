@@ -113,48 +113,92 @@ func TestAuthorCreateHandler(t *testing.T) {
 	})
 
 	t.Run("create author with invalid full_name", func(t *testing.T) {
+		cases := []struct {
+			Name          string
+			AuthorRequest web.CreateAuthorRequest
+			ErrField      string
+			ErrMessage    string
+		}{
+			{
+				Name: "minimum length",
+				AuthorRequest: web.CreateAuthorRequest{
+					FullName:    "Hi",
+					Nationality: "Indonesia",
+				},
+				ErrField:   "full_name",
+				ErrMessage: "full_name must be at least 3 characters",
+			},
+			{
+				Name: "maximum length",
+				AuthorRequest: web.CreateAuthorRequest{
+					FullName:    "Di tengah derasnya arus teknologi modern kemampuan manusia untuk beradaptasi berpikir kritis dan berinovasi menjadi penentu utama dalam menghadapi tantangan global yang terus berkembang tanpa henti di segala bidang kehidupan manusia saat ini terutama dalam bidang teknologi.",
+					Nationality: "Indonesia",
+				},
+				ErrField:   "full_name",
+				ErrMessage: "full_name must be at most 255 characters",
+			},
+			{
+				Name: "required",
+				AuthorRequest: web.CreateAuthorRequest{
+					Nationality: "Indonesia",
+				},
+				ErrField:   "full_name",
+				ErrMessage: "full_name is required",
+			},
+			{
+				Name: "valid full_name",
+				AuthorRequest: web.CreateAuthorRequest{
+					FullName:    "Invalid Full Name #123",
+					Nationality: "Indonesia",
+				},
+				ErrField:   "full_name",
+				ErrMessage: "full_name must not contain numbers or symbols",
+			},
+		}
+
 		validate := config.ValidatorInit()
-		authorRequest := web.CreateAuthorRequest{
-			FullName:    "Invalid Full Name 123",
-			Nationality: "Indonesia",
-		}
-		expectedServiceError := validate.Struct(authorRequest)
+		for _, c := range cases {
+			t.Run(c.Name, func(t *testing.T) {
+				authorRequest := c.AuthorRequest
+				expectedServiceError := validate.Struct(authorRequest)
 
-		mockService := &MockAuthorService{
-			MockError: expectedServiceError,
-		}
-
-		handler := NewAuthorHandler(mockService)
-
-		req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", toJSON(authorRequest))
-		res := httptest.NewRecorder()
-
-		handler.Create(res, req)
-
-		// Check status code
-		if res.Code != http.StatusBadRequest {
-			t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
-		}
-
-		// Get the actual response
-		var actualResponseBody web.WebFailedResponse
-		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
-		if err != nil {
-			t.Fatalf("error when parsing res body: %v", err)
-		}
-
-		errorList, ok := actualResponseBody.Errors.([]interface{})
-		if ok {
-			val, ok := errorList[0].(map[string]interface{})
-			if ok {
-				if val["field"] != "full_name" {
-					t.Errorf("expected error field is %s but got %s", "full_name", val["field"])
+				mockService := &MockAuthorService{
+					MockError: expectedServiceError,
 				}
 
-				if val["message"] != "full_name must not contain numbers or symbols" {
-					t.Errorf("expected error message is %s but got %s", "full_name must not contain numbers or symbols", val["message"])
+				handler := NewAuthorHandler(mockService)
+
+				req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", toJSON(authorRequest))
+				res := httptest.NewRecorder()
+
+				handler.Create(res, req)
+
+				// Check status code
+				if res.Code != http.StatusBadRequest {
+					t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
 				}
-			}
+
+				// Get the actual response
+				var actualResponseBody web.WebFailedResponse
+				err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+				if err != nil {
+					t.Fatalf("error when parsing res body: %v", err)
+				}
+
+				errorList, ok := actualResponseBody.Errors.([]interface{})
+				if ok {
+					val, ok := errorList[0].(map[string]interface{})
+					if ok {
+						if val["field"] != c.ErrField {
+							t.Errorf("expected error field is %s but got %s", c.ErrField, val["field"])
+						}
+
+						if val["message"] != c.ErrMessage {
+							t.Errorf("expected error message is %s but got %s", c.ErrMessage, val["message"])
+						}
+					}
+				}
+			})
 		}
 	})
 }

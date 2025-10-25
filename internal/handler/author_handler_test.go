@@ -10,7 +10,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/mhaatha/go-bookshelf/internal/config"
 	appError "github.com/mhaatha/go-bookshelf/internal/errors"
@@ -21,7 +20,8 @@ type MockAuthorService struct {
 	CreateCalledWithRequest web.CreateAuthorRequest
 	MockCreateResponse      web.CreateAuthorResponse
 
-	MockGetAllResponse []web.GetAuthorResponse
+	GetAllCalledWithQuery web.QueryParamsGetAuthors
+	MockGetAllResponse    []web.GetAuthorResponse
 
 	MockError error
 }
@@ -37,6 +37,8 @@ func (m *MockAuthorService) CreateNewAuthor(ctx context.Context, request web.Cre
 }
 
 func (m *MockAuthorService) GetAllAuthors(ctx context.Context, queris web.QueryParamsGetAuthors) ([]web.GetAuthorResponse, error) {
+	m.GetAllCalledWithQuery = queris
+
 	if m.MockError != nil {
 		return m.MockGetAllResponse, m.MockError
 	}
@@ -66,13 +68,10 @@ func TestAuthorCreateHandler(t *testing.T) {
 			Id:          "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
 			FullName:    "Leila S. Chudori",
 			Nationality: "Indonesia",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
 		}
 
 		mockService := &MockAuthorService{
 			MockCreateResponse: expectedServiceResponse,
-			MockError:          nil,
 		}
 
 		handler := NewAuthorHandler(mockService)
@@ -486,6 +485,72 @@ func TestAuthorGetAllHandler(t *testing.T) {
 			}
 		} else {
 			t.Error("dataList should be true but got false")
+		}
+	})
+
+	t.Run("get authors by full_name query parameter", func(t *testing.T) {
+		expectedQueries := web.QueryParamsGetAuthors{
+			FullName: "Leila",
+		}
+		expectedServiceResponse := []web.GetAuthorResponse{
+			{
+				Id:          "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+				FullName:    "Leila S. Chudori",
+				Nationality: "Indonesia",
+			},
+		}
+
+		mockService := &MockAuthorService{
+			MockGetAllResponse:    expectedServiceResponse,
+			GetAllCalledWithQuery: expectedQueries,
+		}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/authors?full_name=Leila", nil)
+		res := httptest.NewRecorder()
+
+		handler.GetAll(res, req)
+
+		// Check status code
+		if res.Code != http.StatusOK {
+			t.Errorf("expected status code of %d but got %d", http.StatusOK, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebSuccessResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body data
+		dataList, ok := actualResponseBody.Data.([]interface{})
+		if ok {
+			// First data from the JSON array
+			val, ok := dataList[0].(map[string]interface{})
+			if ok {
+				if val["id"] != expectedServiceResponse[0].Id {
+					t.Errorf("expected %s as id but got %s", expectedServiceResponse[0].Id, val["id"])
+				}
+
+				if val["full_name"] != expectedServiceResponse[0].FullName {
+					t.Errorf("expected %s as full_name but got %s", expectedServiceResponse[0].FullName, val["full_name"])
+				}
+
+				if val["nationality"] != expectedServiceResponse[0].Nationality {
+					t.Errorf("expected %s as nationality but got %s", expectedServiceResponse[0].Nationality, val["nationality"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("dataList should be true but got false")
+		}
+
+		// Check actual queries params that has been parsed in service
+		if !reflect.DeepEqual(mockService.GetAllCalledWithQuery, expectedQueries) {
+			t.Errorf("expected %+v as query params but got %+v", expectedQueries, mockService.GetAllCalledWithQuery)
 		}
 	})
 }

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mhaatha/go-bookshelf/internal/config"
 	"github.com/mhaatha/go-bookshelf/internal/model/web"
 )
 
@@ -22,6 +23,10 @@ type MockAuthorService struct {
 
 func (m *MockAuthorService) CreateNewAuthor(ctx context.Context, request web.CreateAuthorRequest) (web.CreateAuthorResponse, error) {
 	m.CreateCalledWithRequest = request
+
+	if m.MockError != nil {
+		return m.MockCreateResponse, m.MockError
+	}
 
 	return m.MockCreateResponse, nil
 }
@@ -104,6 +109,52 @@ func TestAuthorCreateHandler(t *testing.T) {
 		// Check actual request body that has been parsed in service
 		if !reflect.DeepEqual(mockService.CreateCalledWithRequest, authorRequest) {
 			t.Errorf("expected %+v as request body but got %+v", authorRequest, mockService.CreateCalledWithRequest)
+		}
+	})
+
+	t.Run("create author with invalid full_name", func(t *testing.T) {
+		validate := config.ValidatorInit()
+		authorRequest := web.CreateAuthorRequest{
+			FullName:    "Invalid Full Name 123",
+			Nationality: "Indonesia",
+		}
+		expectedServiceError := validate.Struct(authorRequest)
+
+		mockService := &MockAuthorService{
+			MockError: expectedServiceError,
+		}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", toJSON(authorRequest))
+		res := httptest.NewRecorder()
+
+		handler.Create(res, req)
+
+		// Check status code
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		errorList, ok := actualResponseBody.Errors.([]interface{})
+		if ok {
+			val, ok := errorList[0].(map[string]interface{})
+			if ok {
+				if val["field"] != "full_name" {
+					t.Errorf("expected error field is %s but got %s", "full_name", val["field"])
+				}
+
+				if val["message"] != "full_name must not contain numbers or symbols" {
+					t.Errorf("expected error message is %s but got %s", "full_name must not contain numbers or symbols", val["message"])
+				}
+			}
 		}
 	})
 }

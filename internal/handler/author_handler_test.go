@@ -201,6 +201,96 @@ func TestAuthorCreateHandler(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("create author with invalid nationality", func(t *testing.T) {
+		cases := []struct {
+			Name          string
+			AuthorRequest web.CreateAuthorRequest
+			ErrField      string
+			ErrMessage    string
+		}{
+			{
+				Name: "minimum length",
+				AuthorRequest: web.CreateAuthorRequest{
+					FullName:    "Leila S. Chudori",
+					Nationality: "In",
+				},
+				ErrField:   "nationality",
+				ErrMessage: "nationality must be at least 3 characters",
+			},
+			{
+				Name: "maximum length",
+				AuthorRequest: web.CreateAuthorRequest{
+					FullName:    "Leila S. Chudori",
+					Nationality: "Di tengah derasnya arus teknologi modern kemampuan manusia untuk beradaptasi berpikir kritis dan berinovasi menjadi penentu utama dalam menghadapi tantangan global yang terus berkembang tanpa henti di segala bidang kehidupan manusia saat ini terutama dalam bidang teknologi.",
+				},
+				ErrField:   "nationality",
+				ErrMessage: "nationality must be at most 255 characters",
+			},
+			{
+				Name: "required",
+				AuthorRequest: web.CreateAuthorRequest{
+					FullName: "Leila S. Chudori",
+				},
+				ErrField:   "nationality",
+				ErrMessage: "nationality is required",
+			},
+			{
+				Name: "alpha only",
+				AuthorRequest: web.CreateAuthorRequest{
+					FullName:    "Leila S. Chudori",
+					Nationality: "Invalid Nationality Name #123",
+				},
+				ErrField:   "nationality",
+				ErrMessage: "nationality must not contain numbers or symbols",
+			},
+		}
+
+		validate := config.ValidatorInit()
+		for _, c := range cases {
+			t.Run(c.Name, func(t *testing.T) {
+				authorRequest := c.AuthorRequest
+				expectedServiceError := validate.Struct(authorRequest)
+
+				mockService := &MockAuthorService{
+					MockError: expectedServiceError,
+				}
+
+				handler := NewAuthorHandler(mockService)
+
+				req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", toJSON(authorRequest))
+				res := httptest.NewRecorder()
+
+				handler.Create(res, req)
+
+				// Check status code
+				if res.Code != http.StatusBadRequest {
+					t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+				}
+
+				// Get the actual response
+				var actualResponseBody web.WebFailedResponse
+				err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+				if err != nil {
+					t.Fatalf("error when parsing res body: %v", err)
+				}
+
+				errorList, ok := actualResponseBody.Errors.([]interface{})
+				if ok {
+					val, ok := errorList[0].(map[string]interface{})
+					if ok {
+						if val["field"] != c.ErrField {
+							t.Errorf("expected error field is %s but got %s", c.ErrField, val["field"])
+						}
+
+						if val["message"] != c.ErrMessage {
+							t.Errorf("expected error message is %s but got %s", c.ErrMessage, val["message"])
+						}
+					}
+				}
+			})
+		}
+	})
 }
 
 func toJSON(data interface{}) io.Reader {

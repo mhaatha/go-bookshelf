@@ -1338,6 +1338,43 @@ func TestAuthorUpdateHandler(t *testing.T) {
 			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.UpdateByIdCalledWithPathValue)
 		}
 	})
+
+	t.Run("update author with invalid JSON payload", func(t *testing.T) {
+		invalidJSONPayload := `{"full_name":}`
+		mockService := &MockAuthorService{}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", strings.NewReader(invalidJSONPayload))
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", "84a069f3-2620-4da4-8bb5-5c39bbe7cda7")
+
+		handler.UpdateById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body data
+		val, ok := actualResponseBody.Errors.(string)
+		if ok {
+			if val != "Invalid JSON payload" {
+				t.Errorf("expected %s as message but got %s", "Invalid JSON payload", val)
+			}
+		} else {
+			t.Error("val should be true but got false")
+		}
+	})
 }
 
 // Helper functions

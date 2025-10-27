@@ -1610,6 +1610,107 @@ func TestAuthorUpdateHandler(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("update author with invalid nationality", func(t *testing.T) {
+		cases := []struct {
+			Name          string
+			AuthorRequest web.UpdateAuthorRequest
+			ErrField      string
+			ErrMessage    string
+		}{
+			{
+				Name: "minimum length",
+				AuthorRequest: web.UpdateAuthorRequest{
+					FullName:    "Leila S. Chudori",
+					Nationality: "In",
+				},
+				ErrField:   "nationality",
+				ErrMessage: "nationality must be at least 3 characters",
+			},
+			{
+				Name: "maximum length",
+				AuthorRequest: web.UpdateAuthorRequest{
+					FullName:    "Leila S. Chudori",
+					Nationality: "Di tengah derasnya arus teknologi modern kemampuan manusia untuk beradaptasi berpikir kritis dan berinovasi menjadi penentu utama dalam menghadapi tantangan global yang terus berkembang tanpa henti di segala bidang kehidupan manusia saat ini terutama dalam bidang teknologi.",
+				},
+				ErrField:   "nationality",
+				ErrMessage: "nationality must be at most 255 characters",
+			},
+			{
+				Name: "required",
+				AuthorRequest: web.UpdateAuthorRequest{
+					FullName: "Leila S. Chudori",
+				},
+				ErrField:   "nationality",
+				ErrMessage: "nationality is required",
+			},
+			{
+				Name: "alpha only",
+				AuthorRequest: web.UpdateAuthorRequest{
+					FullName:    "Leila S. Chudori",
+					Nationality: "Invalid Nationality Name #123",
+				},
+				ErrField:   "nationality",
+				ErrMessage: "nationality must not contain numbers or symbols",
+			},
+		}
+
+		validate := config.ValidatorInit()
+		for _, c := range cases {
+			t.Run(c.Name, func(t *testing.T) {
+				authorRequest := web.UpdateAuthorRequest{
+					FullName:    c.AuthorRequest.FullName,
+					Nationality: c.AuthorRequest.Nationality,
+				}
+				expectedServiceError := validate.Struct(authorRequest)
+
+				mockService := &MockAuthorService{
+					MockError: expectedServiceError,
+				}
+
+				handler := NewAuthorHandler(mockService)
+
+				req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", toJSON(authorRequest))
+				res := httptest.NewRecorder()
+
+				// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+				req.SetPathValue("id", "84a069f3-2620-4da4-8bb5-5c39bbe7cda7")
+
+				handler.UpdateById(res, req)
+
+				// Check status code
+				if res.Code != http.StatusBadRequest {
+					t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+				}
+
+				// Get the actual response
+				var actualResponseBody web.WebFailedResponse
+				err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+				if err != nil {
+					t.Fatalf("error when parsing res body: %v", err)
+				}
+
+				// Check response body data
+				errorList, ok := actualResponseBody.Errors.([]interface{})
+				if ok {
+					val, ok := errorList[0].(map[string]interface{})
+					if ok {
+						if val["field"] != c.ErrField {
+							t.Errorf("expected error field is %s but got %s", c.ErrField, val["field"])
+						}
+
+						if val["message"] != c.ErrMessage {
+							t.Errorf("expected error message is %s but got %s", c.ErrMessage, val["message"])
+						}
+					} else {
+						t.Error("val should be true but got false")
+					}
+				} else {
+					t.Error("errorList should be true but got false")
+				}
+			})
+		}
+	})
 }
 
 // Helper functions

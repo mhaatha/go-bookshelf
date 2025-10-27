@@ -1805,6 +1805,73 @@ func TestAuthorDeleteHandler(t *testing.T) {
 			t.Error("errorList should be true but got false")
 		}
 	})
+
+	t.Run("delete author with not found id", func(t *testing.T) {
+		pathValue := web.PathParamsDeleteAuthor{
+			Id: "d3b07384-d9a1-4f5c-8e2e-3c4e4f5e6f7a",
+		}
+		expectedServiceError := appError.NewAppError(
+			http.StatusNotFound,
+			[]appError.ErrAggregate{
+				{
+					Field:   "id",
+					Message: "author with id 'd3b07384-d9a1-4f5c-8e2e-3c4e4f5e6f7a' is not found",
+				},
+			},
+			fmt.Errorf("author with id '%s' is not found", "d3b07384-d9a1-4f5c-8e2e-3c4e4f5e6f7a"),
+		)
+
+		mockService := &MockAuthorService{
+			DeleteByIdCalledWithPathValue: pathValue,
+			MockError:                     expectedServiceError,
+		}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodDelete, "/api/v1/authors/d3b07384-d9a1-4f5c-8e2e-3c4e4f5e6f7a", nil)
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", "d3b07384-d9a1-4f5c-8e2e-3c4e4f5e6f7a")
+
+		handler.DeleteById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusNotFound {
+			t.Errorf("expected status code of %d but got %d", http.StatusNotFound, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body data
+		errorList, ok := actualResponseBody.Errors.([]interface{})
+		if ok {
+			val, ok := errorList[0].(map[string]interface{})
+			if ok {
+				if val["field"] != "id" {
+					t.Errorf("expected %s as field name but got %s", "id", val["field"])
+				}
+
+				if val["message"] != "author with id 'd3b07384-d9a1-4f5c-8e2e-3c4e4f5e6f7a' is not found" {
+					t.Errorf("expected %s as message but got %s", "author with id 'd3b07384-d9a1-4f5c-8e2e-3c4e4f5e6f7a' is not found", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("errorList should be true but got false")
+		}
+
+		// Check actual path values that has been parsed in service
+		if !reflect.DeepEqual(mockService.DeleteByIdCalledWithPathValue, pathValue) {
+			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.DeleteByIdCalledWithPathValue)
+		}
+	})
 }
 
 // Helper functions

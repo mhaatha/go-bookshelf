@@ -36,6 +36,9 @@ type MockAuthorService struct {
 	UpdateByIdCalledWithPathValue web.PathParamsUpdateAuthor
 	MockUpdateByIdResponse        web.UpdateAuthorResponse
 
+	// DeleteAuthorById
+	DeleteByIdCalledWithPathValue web.PathParamsDeleteAuthor
+
 	MockError error
 }
 
@@ -81,6 +84,12 @@ func (m *MockAuthorService) UpdateAuthorById(ctx context.Context, pathValues web
 }
 
 func (m *MockAuthorService) DeleteAuthorById(ctx context.Context, pathValues web.PathParamsDeleteAuthor) error {
+	m.DeleteByIdCalledWithPathValue = pathValues
+
+	if m.MockError != nil {
+		return m.MockError
+	}
+
 	return nil
 }
 
@@ -1709,6 +1718,38 @@ func TestAuthorUpdateHandler(t *testing.T) {
 					t.Error("errorList should be true but got false")
 				}
 			})
+		}
+	})
+}
+
+func TestAuthorDeleteHandler(t *testing.T) {
+	t.Run("delete author with existing id", func(t *testing.T) {
+		pathValue := web.PathParamsDeleteAuthor{
+			Id: "d3b07384-d9a1-4f5c-8e2e-3c4e4f5e6f7a",
+		}
+
+		mockService := &MockAuthorService{
+			DeleteByIdCalledWithPathValue: pathValue,
+		}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodDelete, "/api/v1/authors/d3b07384-d9a1-4f5c-8e2e-3c4e4f5e6f7a", nil)
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", "d3b07384-d9a1-4f5c-8e2e-3c4e4f5e6f7a")
+
+		handler.DeleteById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusNoContent {
+			t.Errorf("expected status code of %d but got %d", http.StatusNoContent, res.Code)
+		}
+
+		// Check actual path values that has been parsed in service
+		if !reflect.DeepEqual(mockService.DeleteByIdCalledWithPathValue, pathValue) {
+			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.DeleteByIdCalledWithPathValue)
 		}
 	})
 }

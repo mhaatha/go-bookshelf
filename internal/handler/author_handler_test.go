@@ -1266,6 +1266,78 @@ func TestAuthorUpdateHandler(t *testing.T) {
 			t.Errorf("expected %+v as request body but got %+v", authorRequest, mockService.UpdateByIdCalledWithRequest)
 		}
 	})
+
+	t.Run("update author with empty request body", func(t *testing.T) {
+		pathValue := web.PathParamsUpdateAuthor{
+			Id: "84a069f3-2620-4da4-8bb5-5c39bbe7cda7",
+		}
+		validate := config.ValidatorInit()
+		expectedServiceError := validate.Struct(web.UpdateAuthorRequest{})
+
+		mockService := &MockAuthorService{
+			UpdateByIdCalledWithPathValue: pathValue,
+			MockError:                     expectedServiceError,
+		}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", toJSON(web.UpdateAuthorRequest{}))
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", "84a069f3-2620-4da4-8bb5-5c39bbe7cda7")
+
+		handler.UpdateById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body data
+		errorList, ok := actualResponseBody.Errors.([]interface{})
+		if ok {
+			val, ok := errorList[0].(map[string]interface{})
+			if ok {
+				if val["field"] != "full_name" {
+					t.Errorf("expected %s as field name but got %s", "full_name", val["field"])
+				}
+
+				if val["message"] != "full_name is required" {
+					t.Errorf("expected %s as message but got %s", "full_name is required", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+
+			val, ok = errorList[1].(map[string]interface{})
+			if ok {
+				if val["field"] != "nationality" {
+					t.Errorf("expected %s as field name but got %s", "nationality", val["field"])
+				}
+
+				if val["message"] != "nationality is required" {
+					t.Errorf("expected %s as message but got %s", "nationality is required", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("errorList should be true but got false")
+		}
+
+		// Check actual path values that has been parsed in service
+		if !reflect.DeepEqual(mockService.UpdateByIdCalledWithPathValue, pathValue) {
+			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.UpdateByIdCalledWithPathValue)
+		}
+	})
 }
 
 // Helper functions

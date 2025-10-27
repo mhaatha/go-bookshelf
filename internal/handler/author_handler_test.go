@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mhaatha/go-bookshelf/internal/config"
 	appError "github.com/mhaatha/go-bookshelf/internal/errors"
@@ -18,14 +19,22 @@ import (
 )
 
 type MockAuthorService struct {
+	// CreateNewAuthor
 	CreateCalledWithRequest web.CreateAuthorRequest
 	MockCreateResponse      web.CreateAuthorResponse
 
+	// GetAllAuthors
 	GetAllCalledWithQuery web.QueryParamsGetAuthors
 	MockGetAllResponse    []web.GetAuthorResponse
 
+	// GetAuthorById
 	GetByIdCalledWithPathValue web.PathParamsGetAuthor
 	MockGetByIdResponse        web.GetAuthorResponse
+
+	// UpdateAuthorById
+	UpdateByIdCalledWithRequest   web.UpdateAuthorRequest
+	UpdateByIdCalledWithPathValue web.PathParamsUpdateAuthor
+	MockUpdateByIdResponse        web.UpdateAuthorResponse
 
 	MockError error
 }
@@ -61,7 +70,14 @@ func (m *MockAuthorService) GetAuthorById(ctx context.Context, pathValues web.Pa
 }
 
 func (m *MockAuthorService) UpdateAuthorById(ctx context.Context, pathValues web.PathParamsUpdateAuthor, request web.UpdateAuthorRequest) (web.UpdateAuthorResponse, error) {
-	return web.UpdateAuthorResponse{}, nil
+	m.UpdateByIdCalledWithPathValue = pathValues
+	m.UpdateByIdCalledWithRequest = request
+
+	if m.MockError != nil {
+		return m.MockUpdateByIdResponse, m.MockError
+	}
+
+	return m.MockUpdateByIdResponse, nil
 }
 
 func (m *MockAuthorService) DeleteAuthorById(ctx context.Context, pathValues web.PathParamsDeleteAuthor) error {
@@ -1092,6 +1108,85 @@ func TestAuthorGetByIdHandler(t *testing.T) {
 		// Check actual path values that has been parsed in service
 		if !reflect.DeepEqual(mockService.GetByIdCalledWithPathValue, pathValue) {
 			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.GetByIdCalledWithPathValue)
+		}
+	})
+}
+
+func TestAuthorUpdateHandler(t *testing.T) {
+	t.Run("update author with complete data", func(t *testing.T) {
+		pathValue := web.PathParamsUpdateAuthor{
+			Id: "84a069f3-2620-4da4-8bb5-5c39bbe7cda7",
+		}
+		authorRequest := web.UpdateAuthorRequest{
+			FullName:    "Henry Manampiring",
+			Nationality: "Indonesia",
+		}
+		expectedServiceResponse := web.UpdateAuthorResponse{
+			Id:          "84a069f3-2620-4da4-8bb5-5c39bbe7cda7",
+			FullName:    "Henry Manampiring",
+			Nationality: "Indonesia",
+			UpdatedAt:   time.Date(2025, 10, 27, 8, 21, 0, 0, time.UTC),
+		}
+
+		mockService := &MockAuthorService{
+			UpdateByIdCalledWithPathValue: pathValue,
+			UpdateByIdCalledWithRequest:   authorRequest,
+			MockUpdateByIdResponse:        expectedServiceResponse,
+		}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", toJSON(authorRequest))
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", "84a069f3-2620-4da4-8bb5-5c39bbe7cda7")
+
+		handler.UpdateById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusOK {
+			t.Errorf("expected status code of %d but got %d", http.StatusOK, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebSuccessResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body message
+		if actualResponseBody.Message != "Author updated successfully" {
+			t.Errorf("expected %s as response message but got %s", "Author updated successfully", actualResponseBody.Message)
+		}
+
+		// Check response body data
+		val, ok := actualResponseBody.Data.(map[string]interface{})
+		if ok {
+			if val["id"] != expectedServiceResponse.Id {
+				t.Errorf("expected %s as id but got %s", expectedServiceResponse.Id, val["id"])
+			}
+
+			if val["full_name"] != expectedServiceResponse.FullName {
+				t.Errorf("expected %s as full_name but got %s", expectedServiceResponse.FullName, val["full_name"])
+			}
+
+			if val["updated_at"] != expectedServiceResponse.UpdatedAt.Format(time.RFC3339) {
+				t.Errorf("expected %s as updated_at but got %s", expectedServiceResponse.UpdatedAt.Format(time.RFC3339), val["updated_at"])
+			}
+		} else {
+			t.Error("val should be true but got false")
+		}
+
+		// Check actual path values that has been parsed in service
+		if !reflect.DeepEqual(mockService.UpdateByIdCalledWithPathValue, pathValue) {
+			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.UpdateByIdCalledWithPathValue)
+		}
+
+		// Check actual request body that has been parsed in service
+		if !reflect.DeepEqual(mockService.UpdateByIdCalledWithRequest, authorRequest) {
+			t.Errorf("expected %+v as request body but got %+v", authorRequest, mockService.UpdateByIdCalledWithRequest)
 		}
 	})
 }

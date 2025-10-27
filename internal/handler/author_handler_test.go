@@ -1452,6 +1452,63 @@ func TestAuthorUpdateHandler(t *testing.T) {
 			t.Errorf("expected %+v as request body but got %+v", authorRequest, mockService.UpdateByIdCalledWithRequest)
 		}
 	})
+
+	t.Run("update author with invalid UUID", func(t *testing.T) {
+		pathValue := web.PathParamsUpdateAuthor{
+			Id: "InvalidUUID",
+		}
+		authorRequest := web.UpdateAuthorRequest{
+			FullName:    "Henry Manampiring",
+			Nationality: "Indonesia",
+		}
+		validate := config.ValidatorInit()
+		expectedServiceError := validate.Struct(pathValue)
+
+		mockService := &MockAuthorService{
+			MockError: expectedServiceError,
+		}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/InvalidUUID", toJSON(authorRequest))
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", "InvalidUUID")
+
+		handler.UpdateById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body data
+		errorList, ok := actualResponseBody.Errors.([]interface{})
+		if ok {
+			val, ok := errorList[0].(map[string]interface{})
+			if ok {
+				if val["field"] != "id" {
+					t.Errorf("expected %s as field name but got %s", "id", val["field"])
+				}
+
+				if val["message"] != "'InvalidUUID' is not a valid UUID" {
+					t.Errorf("expected %s as message but got %s", "'InvalidUUID' is not a valid UUID", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("errorList should be true but got false")
+		}
+	})
 }
 
 // Helper functions

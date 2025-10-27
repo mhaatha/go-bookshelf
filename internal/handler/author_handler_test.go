@@ -1027,6 +1027,73 @@ func TestAuthorGetByIdHandler(t *testing.T) {
 			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.GetByIdCalledWithPathValue)
 		}
 	})
+
+	t.Run("get author with not found id", func(t *testing.T) {
+		pathValue := web.PathParamsGetAuthor{
+			Id: "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+		}
+		expectedServiceError := appError.NewAppError(
+			http.StatusNotFound,
+			[]appError.ErrAggregate{
+				{
+					Field:   "id",
+					Message: "author with id 'c512ae16-5f33-4a3c-a1e1-977bd5a20af3' is not found",
+				},
+			},
+			fmt.Errorf("author with id '%s' is not found", "c512ae16-5f33-4a3c-a1e1-977bd5a20af3"),
+		)
+
+		mockService := &MockAuthorService{
+			GetByIdCalledWithPathValue: pathValue,
+			MockError:                  expectedServiceError,
+		}
+
+		handler := NewAuthorHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/authors/c512ae16-5f33-4a3c-a1e1-977bd5a20af3", nil)
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", "c512ae16-5f33-4a3c-a1e1-977bd5a20af3")
+
+		handler.GetById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusNotFound {
+			t.Errorf("expected status code of %d but got %d", http.StatusNotFound, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body data
+		errorList, ok := actualResponseBody.Errors.([]interface{})
+		if ok {
+			val, ok := errorList[0].(map[string]interface{})
+			if ok {
+				if val["field"] != "id" {
+					t.Errorf("expected %s as field name but got %s", "id", val["field"])
+				}
+
+				if val["message"] != "author with id 'c512ae16-5f33-4a3c-a1e1-977bd5a20af3' is not found" {
+					t.Errorf("expected %s as message but got %s", "author with id 'c512ae16-5f33-4a3c-a1e1-977bd5a20af3' is not found", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("errorList should be true but got false")
+		}
+
+		// Check actual path values that has been parsed in service
+		if !reflect.DeepEqual(mockService.GetByIdCalledWithPathValue, pathValue) {
+			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.GetByIdCalledWithPathValue)
+		}
+	})
 }
 
 // Helper functions

@@ -9,7 +9,7 @@ type CreateBookResponse struct {
 	AuthorId      string    `json:"author_id"`
 	PhotoKey      string    `json:"photo_key"`
 	Status        string    `json:"status"`
-	CompletedDate time.Time `json:"completed_date"`
+	CompletedDate string    `json:"completed_date"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }
@@ -21,7 +21,7 @@ type GetBookResponse struct {
 	AuthorId      string    `json:"author_id"`
 	PhotoURL      string    `json:"photo_url"`
 	Status        string    `json:"status"`
-	CompletedDate time.Time `json:"completed_date"`
+	CompletedDate string    `json:"completed_date"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }
@@ -33,7 +33,7 @@ type UpdateBookResponse struct {
 	AuthorId      string    `json:"author_id"`
 	PhotoKey      string    `json:"photo_key"`
 	Status        string    `json:"status"`
-	CompletedDate time.Time `json:"completed_date"`
+	CompletedDate string    `json:"completed_date"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }

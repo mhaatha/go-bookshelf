@@ -95,19 +95,13 @@ func (service *BookServiceImpl) CreateNewBook(ctx context.Context, request web.C
 		)
 	}
 
-	// Parse completed_date to time.Time manually
-	t, err := time.Parse("2006-01-02", request.CompletedDate)
-	if err != nil {
-		return web.CreateBookResponse{}, err
-	}
-
 	book := domain.Book{
 		Name:          request.Name,
 		TotalPage:     request.TotalPage,
 		AuthorId:      request.AuthorId,
 		PhotoKey:      request.PhotoKey,
 		Status:        request.Status,
-		CompletedDate: t,
+		CompletedDate: request.CompletedDate,
 	}
 
 	// Call repository
@@ -336,12 +330,6 @@ func (service *BookServiceImpl) UpdateBookById(ctx context.Context, pathValues w
 		)
 	}
 
-	// Parse completed_date to time.Time manually
-	t, err := time.Parse("2006-01-02", request.CompletedDate)
-	if err != nil {
-		return web.UpdateBookResponse{}, err
-	}
-
 	book := domain.Book{
 		Id:            pathValues.Id,
 		Name:          request.Name,
@@ -349,7 +337,7 @@ func (service *BookServiceImpl) UpdateBookById(ctx context.Context, pathValues w
 		AuthorId:      request.AuthorId,
 		PhotoKey:      request.PhotoKey,
 		Status:        request.Status,
-		CompletedDate: t,
+		CompletedDate: request.CompletedDate,
 	}
 
 	// Call repository

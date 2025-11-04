@@ -111,7 +111,7 @@ func TestAuthorCreateHandler(t *testing.T) {
 
 		handler := NewAuthorHandler(mockService)
 
-		req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", toJSON(authorRequest))
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", ToJSON(authorRequest))
 		res := httptest.NewRecorder()
 
 		handler.Create(res, req)
@@ -213,7 +213,7 @@ func TestAuthorCreateHandler(t *testing.T) {
 
 				handler := NewAuthorHandler(mockService)
 
-				req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", toJSON(authorRequest))
+				req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", ToJSON(authorRequest))
 				res := httptest.NewRecorder()
 
 				handler.Create(res, req)
@@ -307,7 +307,7 @@ func TestAuthorCreateHandler(t *testing.T) {
 
 				handler := NewAuthorHandler(mockService)
 
-				req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", toJSON(authorRequest))
+				req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", ToJSON(authorRequest))
 				res := httptest.NewRecorder()
 
 				handler.Create(res, req)
@@ -367,7 +367,7 @@ func TestAuthorCreateHandler(t *testing.T) {
 
 		handler := NewAuthorHandler(mockService)
 
-		req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", toJSON(authorRequest))
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/authors", ToJSON(authorRequest))
 		res := httptest.NewRecorder()
 
 		handler.Create(res, req)
@@ -1145,7 +1145,7 @@ func TestAuthorUpdateHandler(t *testing.T) {
 
 		handler := NewAuthorHandler(mockService)
 
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", toJSON(authorRequest))
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", ToJSON(authorRequest))
 		res := httptest.NewRecorder()
 
 		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
@@ -1226,7 +1226,7 @@ func TestAuthorUpdateHandler(t *testing.T) {
 
 		handler := NewAuthorHandler(mockService)
 
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", toJSON(authorRequest))
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", ToJSON(authorRequest))
 		res := httptest.NewRecorder()
 
 		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
@@ -1290,7 +1290,7 @@ func TestAuthorUpdateHandler(t *testing.T) {
 
 		handler := NewAuthorHandler(mockService)
 
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", toJSON(web.UpdateAuthorRequest{}))
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", ToJSON(web.UpdateAuthorRequest{}))
 		res := httptest.NewRecorder()
 
 		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
@@ -1412,7 +1412,7 @@ func TestAuthorUpdateHandler(t *testing.T) {
 
 		handler := NewAuthorHandler(mockService)
 
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", toJSON(authorRequest))
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", ToJSON(authorRequest))
 		res := httptest.NewRecorder()
 
 		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
@@ -1479,7 +1479,7 @@ func TestAuthorUpdateHandler(t *testing.T) {
 
 		handler := NewAuthorHandler(mockService)
 
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/InvalidUUID", toJSON(authorRequest))
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/InvalidUUID", ToJSON(authorRequest))
 		res := httptest.NewRecorder()
 
 		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
@@ -1578,7 +1578,7 @@ func TestAuthorUpdateHandler(t *testing.T) {
 
 				handler := NewAuthorHandler(mockService)
 
-				req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", toJSON(authorRequest))
+				req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", ToJSON(authorRequest))
 				res := httptest.NewRecorder()
 
 				// Path value must be set since httptest.NewRequest never goes through http.ServeMux
@@ -1679,7 +1679,7 @@ func TestAuthorUpdateHandler(t *testing.T) {
 
 				handler := NewAuthorHandler(mockService)
 
-				req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", toJSON(authorRequest))
+				req := httptest.NewRequest(http.MethodPut, "/api/v1/authors/84a069f3-2620-4da4-8bb5-5c39bbe7cda7", ToJSON(authorRequest))
 				res := httptest.NewRecorder()
 
 				// Path value must be set since httptest.NewRequest never goes through http.ServeMux
@@ -1875,7 +1875,7 @@ func TestAuthorDeleteHandler(t *testing.T) {
 }
 
 // Helper functions
-func toJSON(data interface{}) io.Reader {
+func ToJSON(data interface{}) io.Reader {
 	jsonBytes, _ := json.Marshal(data)
 	return bytes.NewReader(jsonBytes)
 }

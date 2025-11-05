@@ -680,7 +680,7 @@ func TestBookCreateHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("create book with a name and author that's already on the database", func(t *testing.T) {
+	t.Run("create book with the same name and author", func(t *testing.T) {
 		bookRequest := web.CreateBookRequest{
 			Name:          "Laut Bercerita",
 			TotalPage:     379,
@@ -733,6 +733,67 @@ func TestBookCreateHandler(t *testing.T) {
 
 				if val["message"] != "Laut Bercerita with author id 'c512ae16-5f33-4a3c-a1e1-977bd5a20af3' is already exists" {
 					t.Errorf("expected error message is %s but got %s", "Laut Bercerita with author id 'c512ae16-5f33-4a3c-a1e1-977bd5a20af3' is already exists", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("errorList should be true but got false")
+		}
+	})
+
+	t.Run("create book with not found author_id", func(t *testing.T) {
+		bookRequest := web.CreateBookRequest{
+			Name:          "Laut Bercerita",
+			TotalPage:     379,
+			AuthorId:      "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+			PhotoKey:      "ac0a9b20-2e77-4905-a665-3006763d1934.jpg",
+			Status:        "completed",
+			CompletedDate: "2025-09-29",
+		}
+		expectedServiceError := []appError.ErrAggregate{
+			appError.ErrAggregate{
+				Field:   "author_id",
+				Message: "author with id 'c512ae16-5f33-4a3c-a1e1-977bd5a20af3' is not found",
+			},
+		}
+
+		mockService := &MockBookService{
+			MockError: appError.NewAppError(
+				http.StatusNotFound,
+				expectedServiceError,
+				nil,
+			),
+		}
+
+		handler := NewBookHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/books", ToJSON(bookRequest))
+		res := httptest.NewRecorder()
+
+		handler.Create(res, req)
+
+		// Check status code
+		if res.Code != http.StatusNotFound {
+			t.Errorf("expected status code of %d but got %d", http.StatusNotFound, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		errorList, ok := actualResponseBody.Errors.([]interface{})
+		if ok {
+			val, ok := errorList[0].(map[string]interface{})
+			if ok {
+				if val["field"] != "author_id" {
+					t.Errorf("expected error field is %s but got %s", "author_id", val["field"])
+				}
+				if val["message"] != "author with id 'c512ae16-5f33-4a3c-a1e1-977bd5a20af3' is not found" {
+					t.Errorf("expected error message is %s but got %s", "author with id 'c512ae16-5f33-4a3c-a1e1-977bd5a20af3' is not found", val["message"])
 				}
 			} else {
 				t.Error("val should be true but got false")

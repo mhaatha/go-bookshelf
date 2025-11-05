@@ -328,4 +328,88 @@ func TestBookCreateHandler(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("create book with invalid author_id", func(t *testing.T) {
+		cases := []struct {
+			Name        string
+			BookRequest web.CreateBookRequest
+			ErrField    string
+			ErrMessage  string
+		}{
+			{
+				Name: "required",
+				BookRequest: web.CreateBookRequest{
+					Name:          "Laut Bercerita",
+					TotalPage:     379,
+					PhotoKey:      "ac0a9b20-2e77-4905-a665-3006763d1934.jpg",
+					Status:        "completed",
+					CompletedDate: "2025-09-29",
+				},
+				ErrField:   "author_id",
+				ErrMessage: "author_id is required",
+			},
+			{
+				Name: "uuid",
+				BookRequest: web.CreateBookRequest{
+					Name:          "Laut Bercerita",
+					TotalPage:     379,
+					AuthorId:      "InvalidUUID",
+					PhotoKey:      "ac0a9b20-2e77-4905-a665-3006763d1934.jpg",
+					Status:        "completed",
+					CompletedDate: "2025-09-29",
+				},
+				ErrField:   "author_id",
+				ErrMessage: "'InvalidUUID' is not a valid UUID",
+			},
+		}
+
+		validate := config.ValidatorInit()
+		for _, c := range cases {
+			t.Run(c.Name, func(t *testing.T) {
+				bookRequest := c.BookRequest
+				expectedServiceError := validate.Struct(bookRequest)
+
+				mockService := &MockBookService{
+					MockError: expectedServiceError,
+				}
+
+				handler := NewBookHandler(mockService)
+
+				req := httptest.NewRequest(http.MethodPost, "/api/v1/books", ToJSON(bookRequest))
+				res := httptest.NewRecorder()
+
+				handler.Create(res, req)
+
+				// Check status code
+				if res.Code != http.StatusBadRequest {
+					t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+				}
+
+				// Get the actual response
+				var actualResponseBody web.WebFailedResponse
+				err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+				if err != nil {
+					t.Fatalf("error when parsing res body: %v", err)
+				}
+
+				errorList, ok := actualResponseBody.Errors.([]interface{})
+				if ok {
+					val, ok := errorList[0].(map[string]interface{})
+					if ok {
+						if val["field"] != c.ErrField {
+							t.Errorf("expected error field is %s but got %s", c.ErrField, val["field"])
+						}
+
+						if val["message"] != c.ErrMessage {
+							t.Errorf("expected error message is %s but got %s", c.ErrMessage, val["message"])
+						}
+					} else {
+						t.Error("val should be true but got false")
+					}
+				} else {
+					t.Error("errorList should be true but got false")
+				}
+			})
+		}
+	})
 }

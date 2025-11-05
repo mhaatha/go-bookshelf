@@ -30,6 +30,8 @@ func TranslateValidationErrors(err error) []map[string]string {
 				msg = "the valid value for this field are only 'completed', 'reading', and 'plan_to_read'"
 			case "datetime":
 				msg = "use YYYY-MM-DD for valid datetime"
+			case "validPhotoKey":
+				msg = fmt.Sprintf("'%s' is not a valid photo key", e.Value())
 			default:
 				msg = fmt.Sprintf("%s is invalid", e.Field())
 			}

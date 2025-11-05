@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/mhaatha/go-bookshelf/internal/config"
+	appError "github.com/mhaatha/go-bookshelf/internal/errors"
 	"github.com/mhaatha/go-bookshelf/internal/model/web"
 )
 
@@ -676,6 +677,68 @@ func TestBookCreateHandler(t *testing.T) {
 					t.Error("errorList should be true but got false")
 				}
 			})
+		}
+	})
+
+	t.Run("create book with a name and author that's already on the database", func(t *testing.T) {
+		bookRequest := web.CreateBookRequest{
+			Name:          "Laut Bercerita",
+			TotalPage:     379,
+			AuthorId:      "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+			PhotoKey:      "ac0a9b20-2e77-4905-a665-3006763d1934.jpg",
+			Status:        "completed",
+			CompletedDate: "2025-09-29",
+		}
+		expectedServiceError := []appError.ErrAggregate{
+			appError.ErrAggregate{
+				Field:   "name",
+				Message: "Laut Bercerita with author id 'c512ae16-5f33-4a3c-a1e1-977bd5a20af3' is already exists",
+			},
+		}
+
+		mockService := &MockBookService{
+			MockError: appError.NewAppError(
+				http.StatusBadRequest,
+				expectedServiceError,
+				nil,
+			),
+		}
+
+		handler := NewBookHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/books", ToJSON(bookRequest))
+		res := httptest.NewRecorder()
+
+		handler.Create(res, req)
+
+		// Check status code
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		errorList, ok := actualResponseBody.Errors.([]interface{})
+		if ok {
+			val, ok := errorList[0].(map[string]interface{})
+			if ok {
+				if val["field"] != "name" {
+					t.Errorf("expected error field is %s but got %s", "name", val["field"])
+				}
+
+				if val["message"] != "Laut Bercerita with author id 'c512ae16-5f33-4a3c-a1e1-977bd5a20af3' is already exists" {
+					t.Errorf("expected error message is %s but got %s", "Laut Bercerita with author id 'c512ae16-5f33-4a3c-a1e1-977bd5a20af3' is already exists", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("errorList should be true but got false")
 		}
 	})
 }

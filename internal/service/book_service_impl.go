@@ -68,14 +68,16 @@ func (service *BookServiceImpl) CreateNewBook(ctx context.Context, request web.C
 	// Check if author_id exists
 	_, err = service.AuthorService.GetAuthorById(ctx, web.PathParamsGetAuthor{Id: request.AuthorId})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			errAggregate = append(errAggregate, appError.ErrAggregate{
-				Field:   "author_id",
-				Message: fmt.Sprintf("author with id '%v' is not found", request.AuthorId),
-			})
-		} else {
-			return web.CreateBookResponse{}, err
-		}
+		errAggregate = append(errAggregate, appError.ErrAggregate{
+			Field:   "author_id",
+			Message: fmt.Sprintf("author with id '%v' is not found", request.AuthorId),
+		})
+
+		return web.CreateBookResponse{}, appError.NewAppError(
+			http.StatusNotFound,
+			errAggregate,
+			nil,
+		)
 	}
 
 	// Check if there is a book with the same name and the same author_id

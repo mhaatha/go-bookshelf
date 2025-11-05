@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/mhaatha/go-bookshelf/internal/model/web"
@@ -118,6 +119,11 @@ func TestBookCreateHandler(t *testing.T) {
 			}
 		} else {
 			t.Errorf("val should be true but got false")
+		}
+
+		// Check actual request body that has been passed to service
+		if !reflect.DeepEqual(mockService.CreateMockRequest, bookRequest) {
+			t.Errorf("expected %+v as request body but got %v", bookRequest, mockService.CreateMockRequest)
 		}
 	})
 }

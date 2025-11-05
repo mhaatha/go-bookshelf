@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/mhaatha/go-bookshelf/internal/config"
@@ -800,6 +801,85 @@ func TestBookCreateHandler(t *testing.T) {
 			}
 		} else {
 			t.Error("errorList should be true but got false")
+		}
+	})
+
+	t.Run("create book with invalid JSON payload", func(t *testing.T) {
+		cases := []struct {
+			Name               string
+			InvalidJSONPayload string
+			ErrMessage         string
+		}{
+			{
+				Name:               "invalid type name field",
+				InvalidJSONPayload: `{"name": 1, "total_page": 379, "author_id": "c512ae16-5f33-4a3c-a1e1-977bd5a20af3", "photo_key": "ac0a9b20-2e77-4905-a665-3006763d1935.jpg", "status": "completed", "completed_date": "2025-10-29"}`,
+				ErrMessage:         "Invalid JSON type for field: name",
+			},
+			{
+				Name:               "invalid type total_page field",
+				InvalidJSONPayload: `{"name": "Laut Bercerita", "total_page": "379", "author_id": "c512ae16-5f33-4a3c-a1e1-977bd5a20af3", "photo_key": "ac0a9b20-2e77-4905-a665-3006763d1935.jpg", "status": "completed", "completed_date": "2025-10-29"}`,
+				ErrMessage:         "Invalid JSON type for field: total_page",
+			},
+			{
+				Name:               "invalid type author_id field",
+				InvalidJSONPayload: `{"name": "Laut Bercerita", "total_page": 379, "author_id": 123, "photo_key": "ac0a9b20-2e77-4905-a665-3006763d1935.jpg", "status": "completed", "completed_date": "2025-10-29"}`,
+				ErrMessage:         "Invalid JSON type for field: author_id",
+			},
+			{
+				Name:               "invalid type photo_key field",
+				InvalidJSONPayload: `{"name": "Laut Bercerita", "total_page": 379, "author_id": "c512ae16-5f33-4a3c-a1e1-977bd5a20af3", "photo_key": 123, "status": "completed", "completed_date": "2025-10-29"}`,
+				ErrMessage:         "Invalid JSON type for field: photo_key",
+			},
+			{
+				Name:               "invalid type status field",
+				InvalidJSONPayload: `{"name": "Laut Bercerita", "total_page": 379, "author_id": "c512ae16-5f33-4a3c-a1e1-977bd5a20af3", "photo_key": "ac0a9b20-2e77-4905-a665-3006763d1935.jpg", "status": 1, "completed_date": "2025-10-29"}`,
+				ErrMessage:         "Invalid JSON type for field: status",
+			},
+			{
+				Name:               "invalid type completed_date field",
+				InvalidJSONPayload: `{"name": "Laut Bercerita", "total_page": 379, "author_id": "c512ae16-5f33-4a3c-a1e1-977bd5a20af3", "photo_key": "ac0a9b20-2e77-4905-a665-3006763d1935.jpg", "status": "completed", "completed_date": 2025}`,
+				ErrMessage:         "Invalid JSON type for field: completed_date",
+			},
+			{
+				Name:               "invalid JSON payload",
+				InvalidJSONPayload: `{"name": "Laut Bercerita" "total_page": 379, "author_id": "c512ae16-5f33-4a3c-a1e1-977bd5a20af3", "photo_key": "ac0a9b20-2e77-4905-a665-3006763d1935.jpg", "status": "completed", "completed_date": 2025-10-29}`,
+				ErrMessage:         "Invalid JSON payload",
+			},
+		}
+
+		for _, c := range cases {
+			t.Run(c.Name, func(t *testing.T) {
+				mockService := &MockBookService{}
+
+				handler := NewBookHandler(mockService)
+
+				req := httptest.NewRequest(http.MethodPost, "/api/v1/books", strings.NewReader(c.InvalidJSONPayload))
+				req.Header.Set("Content-Type", "application/json")
+				res := httptest.NewRecorder()
+
+				handler.Create(res, req)
+
+				// Check status code
+				if res.Code != http.StatusBadRequest {
+					t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+				}
+
+				// Get the actual response
+				var actualResponseBody web.WebFailedResponse
+				err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+				if err != nil {
+					t.Fatalf("error when parsing res body: %v", err)
+				}
+
+				val, ok := actualResponseBody.Errors.(string)
+				if ok {
+					if val != c.ErrMessage {
+						t.Errorf("expected %s but got %s", c.ErrMessage, val)
+					}
+				} else {
+					t.Error("val should be true but got false")
+				}
+			})
 		}
 	})
 }

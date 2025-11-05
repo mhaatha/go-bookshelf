@@ -3,6 +3,7 @@ package config
 import (
 	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -21,6 +22,7 @@ func ValidatorInit() *validator.Validate {
 	// Register custom validation
 	validate.RegisterValidation("validName", validName)
 	validate.RegisterValidation("bookStatus", bookStatus)
+	validate.RegisterValidation("validPhotoKey", validPhotoKey)
 
 	return validate
 }
@@ -38,4 +40,14 @@ func bookStatus(fl validator.FieldLevel) bool {
 	}
 
 	return true
+}
+
+func validPhotoKey(fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+
+	if value == "" {
+		return false
+	}
+
+	return strings.HasSuffix(strings.ToLower(value), ".jpg")
 }

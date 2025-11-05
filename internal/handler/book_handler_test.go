@@ -412,4 +412,114 @@ func TestBookCreateHandler(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("create book with invalid photo_key", func(t *testing.T) {
+		cases := []struct {
+			Name        string
+			BookRequest web.CreateBookRequest
+			ErrField    string
+			ErrMessage  string
+		}{
+			{
+				Name: "required",
+				BookRequest: web.CreateBookRequest{
+					Name:          "Laut Bercerita",
+					TotalPage:     379,
+					AuthorId:      "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+					Status:        "completed",
+					CompletedDate: "2025-09-29",
+				},
+				ErrField:   "photo_key",
+				ErrMessage: "photo_key is required",
+			},
+			{
+				Name: "minimum length",
+				BookRequest: web.CreateBookRequest{
+					Name:          "Laut Bercerita",
+					TotalPage:     379,
+					AuthorId:      "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+					PhotoKey:      "a.jpg",
+					Status:        "completed",
+					CompletedDate: "2025-09-29",
+				},
+				ErrField:   "photo_key",
+				ErrMessage: "photo_key must be at least 6 characters",
+			},
+			{
+				Name: "maximum length",
+				BookRequest: web.CreateBookRequest{
+					Name:          "Laut Bercerita",
+					TotalPage:     379,
+					AuthorId:      "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+					PhotoKey:      "Di tengah derasnya arus teknologi modern kemampuan manusia untuk beradaptasi berpikir kritis dan berinovasi menjadi penentu utama dalam menghadapi tantangan global yang terus berkembang tanpa henti di segala bidang kehidupan manusia saat ini terutama dalam bidang teknologi.jpg",
+					Status:        "completed",
+					CompletedDate: "2025-09-29",
+				},
+				ErrField:   "photo_key",
+				ErrMessage: "photo_key must be at most 255 characters",
+			},
+			{
+				Name: "valid photo key",
+				BookRequest: web.CreateBookRequest{
+					Name:          "Laut Bercerita",
+					TotalPage:     379,
+					AuthorId:      "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+					PhotoKey:      "InvalidPhotoKey",
+					Status:        "completed",
+					CompletedDate: "2025-09-29",
+				},
+				ErrField:   "photo_key",
+				ErrMessage: "'InvalidPhotoKey' is not a valid photo key",
+			},
+		}
+
+		validate := config.ValidatorInit()
+		for _, c := range cases {
+			t.Run(c.Name, func(t *testing.T) {
+				bookRequest := c.BookRequest
+				expectedServiceError := validate.Struct(bookRequest)
+
+				mockService := &MockBookService{
+					MockError: expectedServiceError,
+				}
+
+				handler := NewBookHandler(mockService)
+
+				req := httptest.NewRequest(http.MethodPost, "/api/v1/books", ToJSON(bookRequest))
+				res := httptest.NewRecorder()
+
+				handler.Create(res, req)
+
+				// Check status code
+				if res.Code != http.StatusBadRequest {
+					t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+				}
+
+				// Get the actual response
+				var actualResponseBody web.WebFailedResponse
+				err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+				if err != nil {
+					t.Fatalf("error when parsing res body: %v", err)
+				}
+
+				errorList, ok := actualResponseBody.Errors.([]interface{})
+				if ok {
+					val, ok := errorList[0].(map[string]interface{})
+					if ok {
+						if val["field"] != c.ErrField {
+							t.Errorf("expected error field is %s but got %s", c.ErrField, val["field"])
+						}
+
+						if val["message"] != c.ErrMessage {
+							t.Errorf("expected error message is %s but got %s", c.ErrMessage, val["message"])
+						}
+					} else {
+						t.Error("val should be true but got false")
+					}
+				} else {
+					t.Error("errorList should be true but got false")
+				}
+			})
+		}
+	})
 }

@@ -72,8 +72,8 @@ func (repository *BookRepositoryImpl) CheckByNameAndAuthorId(ctx context.Context
 
 func (repository *BookRepositoryImpl) FindAll(ctx context.Context, name, status, author_name string) ([]domain.Book, error) {
 	baseQuery := `
-	SELECT b.id, b.name, b.total_page, b.author_id, b.photo_key, 
-       	   b.status, b.completed_date, b.created_at, b.updated_at 
+	SELECT b.id, b.name, b.total_page, b.author_id, b.photo_key,
+       	   b.status, b.completed_date, b.created_at, b.updated_at
 	FROM books b
 	JOIN authors a ON b.author_id = a.id
 	`

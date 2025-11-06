@@ -1168,4 +1168,118 @@ func TestBookGetAllHandler(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("get books by invalid query parameter", func(t *testing.T) {
+		cases := []struct {
+			Name               string
+			InvalidQueryParams web.QueryParamsGetBooks
+			QueryString        string
+			ErrField           string
+			ErrMessage         string
+		}{
+			{
+				Name: "minimum 'name' length",
+				InvalidQueryParams: web.QueryParamsGetBooks{
+					Name: "Ab",
+				},
+				QueryString: "/api/v1/books?name=Ab",
+				ErrField:    "name",
+				ErrMessage:  "name must be at least 3 characters",
+			},
+			{
+				Name: "maximum 'name' length",
+				InvalidQueryParams: web.QueryParamsGetBooks{
+					Name: "Di tengah derasnya arus teknologi modern kemampuan manusia untuk beradaptasi berpikir kritis dan berinovasi menjadi penentu utama dalam menghadapi tantangan global yang terus berkembang tanpa henti di segala bidang kehidupan manusia saat ini terutama dalam bidang teknologi.",
+				},
+				QueryString: "/api/v1/books?name=Di%20tengah%20derasnya%20arus%20teknologi%20modern%20kemampuan%20manusia%20untuk%20beradaptasi%20berpikir%20kritis%20dan%20berinovasi%20menjadi%20penentu%20utama%20dalam%20menghadapi%20tantangan%20global%20yang%20terus%20berkembang%20tanpa%20henti%20di%20segala%20bidang%20kehidupan%20manusia%20saat%20ini%20terutama%20dalam%20bidang%20teknologi.",
+				ErrField:    "name",
+				ErrMessage:  "name must be at most 255 characters",
+			},
+			{
+				Name: "invalid 'status' enum",
+				InvalidQueryParams: web.QueryParamsGetBooks{
+					Status: "InvalidStatus",
+				},
+				QueryString: "/api/v1/books?status=InvalidStatus",
+				ErrField:    "status",
+				ErrMessage:  "the valid value for this field are only 'completed', 'reading', and 'plan_to_read'",
+			},
+			{
+				Name: "minimum 'author_name' length",
+				InvalidQueryParams: web.QueryParamsGetBooks{
+					AuthorName: "Ab",
+				},
+				QueryString: "/api/v1/books?author_name=Ab",
+				ErrField:    "author_name",
+				ErrMessage:  "author_name must be at least 3 characters",
+			},
+			{
+				Name: "maximum 'author_name' length",
+				InvalidQueryParams: web.QueryParamsGetBooks{
+					AuthorName: "Di tengah derasnya arus teknologi modern kemampuan manusia untuk beradaptasi berpikir kritis dan berinovasi menjadi penentu utama dalam menghadapi tantangan global yang terus berkembang tanpa henti di segala bidang kehidupan manusia saat ini terutama dalam bidang teknologi.",
+				},
+				QueryString: "/api/v1/books?author_name=Di%20tengah%20derasnya%20arus%20teknologi%20modern%20kemampuan%20manusia%20untuk%20beradaptasi%20berpikir%20kritis%20dan%20berinovasi%20menjadi%20penentu%20utama%20dalam%20menghadapi%20tantangan%20global%20yang%20terus%20berkembang%20tanpa%20henti%20di%20segala%20bidang%20kehidupan%20manusia%20saat%20ini%20terutama%20dalam%20bidang%20teknologi.",
+				ErrField:    "author_name",
+				ErrMessage:  "author_name must be at most 255 characters",
+			},
+			{
+				Name: "invalid 'author_name' format",
+				InvalidQueryParams: web.QueryParamsGetBooks{
+					AuthorName: "HelloAnonymous!@",
+				},
+				QueryString: "/api/v1/books?author_name=HelloAnonymous!@",
+				ErrField:    "author_name",
+				ErrMessage:  "author_name must not contain numbers or symbols",
+			},
+		}
+
+		validate := config.ValidatorInit()
+		for _, c := range cases {
+			t.Run(c.Name, func(t *testing.T) {
+				queries := c.InvalidQueryParams
+				expectedServiceError := validate.Struct(queries)
+
+				mockService := &MockBookService{
+					MockError: expectedServiceError,
+				}
+
+				handler := NewBookHandler(mockService)
+
+				req := httptest.NewRequest(http.MethodGet, c.QueryString, nil)
+				res := httptest.NewRecorder()
+
+				handler.GetAll(res, req)
+
+				// Check status code
+				if res.Code != http.StatusBadRequest {
+					t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+				}
+
+				// Get the actual response
+				var actualResponseBody web.WebFailedResponse
+				err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+				if err != nil {
+					t.Fatalf("error when parsing res body: %v", err)
+				}
+
+				errorList, ok := actualResponseBody.Errors.([]interface{})
+				if ok {
+					val, ok := errorList[0].(map[string]interface{})
+					if ok {
+						if val["field"] != c.ErrField {
+							t.Errorf("expected error field is %s but got %s", c.ErrField, val["field"])
+						}
+
+						if val["message"] != c.ErrMessage {
+							t.Errorf("expected error message is %s but got %s", c.ErrMessage, val["message"])
+						}
+					} else {
+						t.Error("val should be true but got false")
+					}
+				} else {
+					t.Error("errorList should be true but got false")
+				}
+			})
+		}
+	})
 }

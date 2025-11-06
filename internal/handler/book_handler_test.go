@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -1228,7 +1227,6 @@ func TestBookGetAllHandler(t *testing.T) {
 			t.Error("dataList should be true but got false")
 		}
 
-		fmt.Println(mockService.GetAllMockQuery)
 		// Check actual queries params that has been parsed in service
 		if !reflect.DeepEqual(mockService.GetAllMockQuery, expectedQueries) {
 			t.Errorf("expected %+v as query params but got %+v", expectedQueries, mockService.GetAllMockQuery)

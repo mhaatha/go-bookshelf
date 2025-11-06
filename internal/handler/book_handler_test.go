@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -37,6 +38,8 @@ func (m *MockBookService) CreateNewBook(ctx context.Context, request web.CreateB
 }
 
 func (m *MockBookService) GetAllBooks(ctx context.Context, queries web.QueryParamsGetBooks) ([]web.GetBookResponse, error) {
+	m.GetAllMockQuery = queries
+
 	if m.MockError != nil {
 		return nil, m.MockError
 	}
@@ -1035,7 +1038,6 @@ func TestBookGetAllHandler(t *testing.T) {
 		}
 
 		mockService := &MockBookService{
-			GetAllMockQuery:    expectedQueries,
 			GetAllMockResponse: expectedServiceResponse,
 		}
 
@@ -1098,6 +1100,135 @@ func TestBookGetAllHandler(t *testing.T) {
 			t.Error("dataList should be true but got false")
 		}
 
+		// Check actual queries params that has been parsed in service
+		if !reflect.DeepEqual(mockService.GetAllMockQuery, expectedQueries) {
+			t.Errorf("expected %+v as query params but got %+v", expectedQueries, mockService.GetAllMockQuery)
+		}
+	})
+
+	t.Run("get books by status query parameter", func(t *testing.T) {
+		expectedQueries := web.QueryParamsGetBooks{
+			Status: "completed",
+		}
+		expectedServiceResponse := []web.GetBookResponse{
+			{
+				Id:            "43723811-c8e3-4cba-85cc-142954064ae4",
+				Name:          "Laut Bercerita",
+				TotalPage:     379,
+				AuthorId:      "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+				PhotoURL:      "http://127.0.0.1:9000/book-images/ac0a9b20-2e77-4905-a665-3006763d1935.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=myAccessKey%2F20251105%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20251105T235228Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=2bd452b31372e87129987c9d8e24b4ae556bde8b983db61d3c6b7fe98dba02a7",
+				Status:        "completed",
+				CompletedDate: "2025-09-29",
+			},
+			{
+				Id:            "f200a4c1-a141-44a0-9c9d-0b035016e2f9",
+				Name:          "Sebuah Seni Untuk Bersikap Bodo Amat",
+				TotalPage:     246,
+				AuthorId:      "8b970b2a-09d4-450c-8bb8-83da50392d6d",
+				PhotoURL:      "http://127.0.0.1:9000/book-images/67f99bdf-4c43-4200-b5d0-a7adbe125f97.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=myAccessKey%2F20251105%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20251105T235228Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=2bd452b31372e87129987c9d8e24b4ae556bde8b983db61d3c6b7fe98dba02a7",
+				Status:        "completed",
+				CompletedDate: "2025-11-29",
+			},
+		}
+
+		mockService := &MockBookService{
+			GetAllMockResponse: expectedServiceResponse,
+		}
+
+		handler := NewBookHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/books?status=completed", nil)
+		res := httptest.NewRecorder()
+
+		handler.GetAll(res, req)
+
+		// Check status code
+		if res.Code != http.StatusOK {
+			t.Errorf("expected status code of %d but got %d", http.StatusOK, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebSuccessResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body data
+		dataList, ok := actualResponseBody.Data.([]interface{})
+		if ok {
+			// First data from the JSON array
+			val, ok := dataList[0].(map[string]interface{})
+			if ok {
+				if val["id"] != expectedServiceResponse[0].Id {
+					t.Errorf("expected %s as id but got %s", expectedServiceResponse[0].Id, val["id"])
+				}
+
+				if val["name"] != expectedServiceResponse[0].Name {
+					t.Errorf("expected %s as name but got %s", expectedServiceResponse[0].Name, val["name"])
+				}
+
+				if int(val["total_page"].(float64)) != expectedServiceResponse[0].TotalPage {
+					t.Errorf("expected %d as total_page but got %d", expectedServiceResponse[0].TotalPage, val["total_page"])
+				}
+
+				if val["author_id"] != expectedServiceResponse[0].AuthorId {
+					t.Errorf("expected %s as author_id but got %s", expectedServiceResponse[0].AuthorId, val["author_id"])
+				}
+
+				if val["photo_url"] != expectedServiceResponse[0].PhotoURL {
+					t.Errorf("expected %s as photo_url but got %s", expectedServiceResponse[0].PhotoURL, val["photo_url"])
+				}
+
+				if val["status"] != expectedServiceResponse[0].Status {
+					t.Errorf("expected %s as status but got %s", expectedServiceResponse[0].Status, val["status"])
+				}
+
+				if val["completed_date"] != expectedServiceResponse[0].CompletedDate {
+					t.Errorf("expected %s as completed_date but got %s", expectedServiceResponse[0].CompletedDate, val["completed_date"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+
+			// Second data from JSON array
+			val, ok = dataList[1].(map[string]interface{})
+			if ok {
+				if val["id"] != expectedServiceResponse[1].Id {
+					t.Errorf("expected %s as id but got %s", expectedServiceResponse[1].Id, val["id"])
+				}
+
+				if val["name"] != expectedServiceResponse[1].Name {
+					t.Errorf("expected %s as name but got %s", expectedServiceResponse[1].Name, val["name"])
+				}
+
+				if int(val["total_page"].(float64)) != expectedServiceResponse[1].TotalPage {
+					t.Errorf("expected %d as total_page but got %d", expectedServiceResponse[1].TotalPage, val["total_page"])
+				}
+
+				if val["author_id"] != expectedServiceResponse[1].AuthorId {
+					t.Errorf("expected %s as author_id but got %s", expectedServiceResponse[1].AuthorId, val["author_id"])
+				}
+
+				if val["photo_url"] != expectedServiceResponse[1].PhotoURL {
+					t.Errorf("expected %s as photo_url but got %s", expectedServiceResponse[1].PhotoURL, val["photo_url"])
+				}
+
+				if val["status"] != expectedServiceResponse[1].Status {
+					t.Errorf("expected %s as status but got %s", expectedServiceResponse[1].Status, val["status"])
+				}
+
+				if val["completed_date"] != expectedServiceResponse[1].CompletedDate {
+					t.Errorf("expected %s as completed_date but got %s", expectedServiceResponse[1].CompletedDate, val["completed_date"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("dataList should be true but got false")
+		}
+
+		fmt.Println(mockService.GetAllMockQuery)
 		// Check actual queries params that has been parsed in service
 		if !reflect.DeepEqual(mockService.GetAllMockQuery, expectedQueries) {
 			t.Errorf("expected %+v as query params but got %+v", expectedQueries, mockService.GetAllMockQuery)

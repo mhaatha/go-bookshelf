@@ -28,6 +28,11 @@ type MockBookService struct {
 	GetByIdMockPathValue web.PathParamsGetBook
 	GetByIdMockResponse  web.GetBookResponse
 
+	// UpdateBookById
+	UpdateByIdMockPathValue web.PathParamsUpdateBook
+	UpdateByIdMockRequest   web.UpdateBookRequest
+	UpdateByIdMockResponse  web.UpdateBookResponse
+
 	MockError error
 }
 
@@ -62,7 +67,14 @@ func (m *MockBookService) GetBookById(ctx context.Context, pathValues web.PathPa
 }
 
 func (m *MockBookService) UpdateBookById(ctx context.Context, pathValues web.PathParamsUpdateBook, request web.UpdateBookRequest) (web.UpdateBookResponse, error) {
-	return web.UpdateBookResponse{}, nil
+	m.UpdateByIdMockPathValue = pathValues
+	m.UpdateByIdMockRequest = request
+
+	if m.MockError != nil {
+		return web.UpdateBookResponse{}, m.MockError
+	}
+
+	return m.UpdateByIdMockResponse, nil
 }
 
 func (m *MockBookService) DeleteBookById(ctx context.Context, pathValues web.PathParamsDeleteBook) error {
@@ -1504,6 +1516,102 @@ func TestBookGetByIdHandler(t *testing.T) {
 		// Check actual path values that has been parsed in service
 		if !reflect.DeepEqual(mockService.GetByIdMockPathValue, pathValue) {
 			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.GetByIdMockPathValue)
+		}
+	})
+}
+
+func TestBookUpdateByIdHandler(t *testing.T) {
+	t.Run("update book by id with complete data", func(t *testing.T) {
+		pathValue := web.PathParamsUpdateBook{
+			Id: "43723811-c8e3-4cba-85cc-142954064ae4",
+		}
+		bookRequest := web.UpdateBookRequest{
+			Name:          "New Book Name",
+			TotalPage:     100,
+			AuthorId:      "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+			PhotoKey:      "ac0a9b20-2e77-4905-a665-3006763d1935.jpg",
+			Status:        "plan_to_read",
+			CompletedDate: "0000-00-00",
+		}
+		expectedServiceResponse := web.UpdateBookResponse{
+			Id:            "43723811-c8e3-4cba-85cc-142954064ae4",
+			Name:          "New Book Name",
+			TotalPage:     100,
+			AuthorId:      "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+			PhotoKey:      "ac0a9b20-2e77-4905-a665-3006763d1935.jpg",
+			Status:        "plan_to_read",
+			CompletedDate: "0000-00-00",
+		}
+
+		mockService := &MockBookService{
+			UpdateByIdMockResponse: expectedServiceResponse,
+		}
+
+		handler := NewBookHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/books/43723811-c8e3-4cba-85cc-142954064ae4", ToJSON(bookRequest))
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", "43723811-c8e3-4cba-85cc-142954064ae4")
+
+		handler.UpdateById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusOK {
+			t.Errorf("expected status code of %d but got %d", http.StatusOK, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebSuccessResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body message
+		if actualResponseBody.Message != "Book updated successfully" {
+			t.Errorf("expected %s as response message but got %s", "Book updated successfully", actualResponseBody.Message)
+		}
+
+		// Check response body data
+		val, ok := actualResponseBody.Data.(map[string]interface{})
+		if ok {
+			if val["id"] != "expectedServiceResponse.Id" {
+				t.Errorf("expected %s as id but got %s", expectedServiceResponse.Id, val["id"])
+			}
+
+			if val["name"] != expectedServiceResponse.Name {
+				t.Errorf("expected %s as name but got %s", expectedServiceResponse.Name, val["name"])
+			}
+
+			if val["author_id"] != expectedServiceResponse.AuthorId {
+				t.Errorf("expected %s as author_id but got %s", expectedServiceResponse.AuthorId, val["author_id"])
+			}
+
+			if val["photo_key"] != expectedServiceResponse.PhotoKey {
+				t.Errorf("expected %s as photo_key but got %s", expectedServiceResponse.PhotoKey, val["photo_key"])
+			}
+
+			if val["status"] != expectedServiceResponse.Status {
+				t.Errorf("expected %s as status but got %s", expectedServiceResponse.Status, val["status"])
+			}
+
+			if val["completed_date"] != expectedServiceResponse.CompletedDate {
+				t.Errorf("expected %s as completed_date but got %s", expectedServiceResponse.CompletedDate, val["completed_date"])
+			}
+		} else {
+			t.Error("val should be true but got false")
+		}
+
+		// Check actual path values that has been parsed in service
+		if !reflect.DeepEqual(mockService.UpdateByIdMockPathValue, pathValue) {
+			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.UpdateByIdMockPathValue)
+		}
+
+		// Check actual request body that has been parsed in service
+		if !reflect.DeepEqual(mockService.UpdateByIdMockRequest, bookRequest) {
+			t.Errorf("expected %+v as request body but got %+v", bookRequest, mockService.UpdateByIdMockRequest)
 		}
 	})
 }

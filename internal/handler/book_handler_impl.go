@@ -141,7 +141,7 @@ func (handler *BookHandlerImpl) UpdateById(w http.ResponseWriter, r *http.Reques
 	)
 
 	// Write and send the response
-	helper.WriteToResponseBody(w, http.StatusCreated, web.WebSuccessResponse{
+	helper.WriteToResponseBody(w, http.StatusOK, web.WebSuccessResponse{
 		Message: "Book updated successfully",
 		Data:    bookResponse,
 	})

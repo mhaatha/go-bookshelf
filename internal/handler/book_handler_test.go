@@ -1577,7 +1577,7 @@ func TestBookUpdateByIdHandler(t *testing.T) {
 		// Check response body data
 		val, ok := actualResponseBody.Data.(map[string]interface{})
 		if ok {
-			if val["id"] != "expectedServiceResponse.Id" {
+			if val["id"] != expectedServiceResponse.Id {
 				t.Errorf("expected %s as id but got %s", expectedServiceResponse.Id, val["id"])
 			}
 

@@ -1885,4 +1885,72 @@ func TestBookUpdateByIdHandler(t *testing.T) {
 			t.Errorf("expected %+v as request body but got %+v", bookRequest, mockService.UpdateByIdMockRequest)
 		}
 	})
+
+	t.Run("update book with invalid id", func(t *testing.T) {
+		invalidUUID := "InvalidUUID"
+
+		pathValue := web.PathParamsUpdateBook{
+			Id: invalidUUID,
+		}
+		bookRequest := web.UpdateBookRequest{
+			Name:          "New Book Name",
+			TotalPage:     100,
+			AuthorId:      "c512ae16-5f33-4a3c-a1e1-977bd5a20af3",
+			PhotoKey:      "ac0a9b20-2e77-4905-a665-3006763d1935.jpg",
+			Status:        "plan_to_read",
+			CompletedDate: "0000-00-00",
+		}
+		validate := config.ValidatorInit()
+		expectedServiceError := validate.Struct(pathValue)
+
+		mockService := &MockBookService{
+			MockError: expectedServiceError,
+		}
+
+		handler := NewBookHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/books/InvalidUUID", ToJSON(bookRequest))
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", invalidUUID)
+
+		handler.UpdateById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body data
+		errorList, ok := actualResponseBody.Errors.([]interface{})
+		if ok {
+			val, ok := errorList[0].(map[string]interface{})
+			if ok {
+				if val["field"] != "id" {
+					t.Errorf("expected %s as field name but got %s", "id", val["field"])
+				}
+
+				if val["message"] != fmt.Sprintf("'%s' is not a valid UUID", invalidUUID) {
+					t.Errorf("expected %s as message but got %s", fmt.Sprintf("'%s' is not a valid UUID", invalidUUID), val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("errorList should be true but got false")
+		}
+
+		// Check actual path values that has been parsed in service
+		if !reflect.DeepEqual(mockService.UpdateByIdMockPathValue, pathValue) {
+			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.UpdateByIdMockPathValue)
+		}
+	})
 }

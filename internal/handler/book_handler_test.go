@@ -33,6 +33,9 @@ type MockBookService struct {
 	UpdateByIdMockRequest   web.UpdateBookRequest
 	UpdateByIdMockResponse  web.UpdateBookResponse
 
+	// DeleteBookById
+	DeleteByIdMockPathValue web.PathParamsDeleteBook
+
 	MockError error
 }
 
@@ -78,6 +81,12 @@ func (m *MockBookService) UpdateBookById(ctx context.Context, pathValues web.Pat
 }
 
 func (m *MockBookService) DeleteBookById(ctx context.Context, pathValues web.PathParamsDeleteBook) error {
+	m.DeleteByIdMockPathValue = pathValues
+
+	if m.MockError != nil {
+		return m.MockError
+	}
+
 	return nil
 }
 
@@ -2171,6 +2180,36 @@ func TestBookUpdateByIdHandler(t *testing.T) {
 		// Check actual path values that has been parsed in service
 		if !reflect.DeepEqual(mockService.UpdateByIdMockPathValue, pathValue) {
 			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.UpdateByIdMockPathValue)
+		}
+	})
+}
+
+func TestBookDeleteByIdHandler(t *testing.T) {
+	t.Run("delete book with id", func(t *testing.T) {
+		pathValue := web.PathParamsDeleteBook{
+			Id: "43723811-c8e3-4cba-85cc-142954064ae4",
+		}
+
+		mockService := &MockBookService{}
+
+		handler := NewBookHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodDelete, "/api/v1/books/43723811-c8e3-4cba-85cc-142954064ae4", nil)
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", pathValue.Id)
+
+		handler.DeleteById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusNoContent {
+			t.Errorf("expected status code %d but got %d", http.StatusNoContent, res.Code)
+		}
+
+		// Check actual path values that has been parsed in service
+		if !reflect.DeepEqual(mockService.DeleteByIdMockPathValue, pathValue) {
+			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.DeleteByIdMockPathValue)
 		}
 	})
 }

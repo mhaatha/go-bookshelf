@@ -1614,4 +1614,114 @@ func TestBookUpdateByIdHandler(t *testing.T) {
 			t.Errorf("expected %+v as request body but got %+v", bookRequest, mockService.UpdateByIdMockRequest)
 		}
 	})
+
+	t.Run("update book with empty request body", func(t *testing.T) {
+		pathValue := web.PathParamsUpdateBook{
+			Id: "43723811-c8e3-4cba-85cc-142954064ae4",
+		}
+		validate := config.ValidatorInit()
+		expectedServiceError := validate.Struct(web.UpdateBookRequest{})
+
+		mockService := &MockBookService{
+			MockError: expectedServiceError,
+		}
+
+		handler := NewBookHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/books/43723811-c8e3-4cba-85cc-142954064ae4", ToJSON(web.UpdateBookRequest{}))
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", "43723811-c8e3-4cba-85cc-142954064ae4")
+
+		handler.UpdateById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body data
+		errorList, ok := actualResponseBody.Errors.([]interface{})
+		if ok {
+			val, ok := errorList[0].(map[string]interface{})
+			if ok {
+				if val["field"] != "name" {
+					t.Errorf("expected %s as field name but got %s", "name", val["field"])
+				}
+
+				if val["message"] != "name is required" {
+					t.Errorf("expected %s as message but got %s", "name is required", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+
+			val, ok = errorList[1].(map[string]interface{})
+			if ok {
+				if val["field"] != "total_page" {
+					t.Errorf("expected %s as field name but got %s", "total_page", val["field"])
+				}
+
+				if val["message"] != "total_page is required" {
+					t.Errorf("expected %s as message but got %s", "total_page is required", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+
+			val, ok = errorList[2].(map[string]interface{})
+			if ok {
+				if val["field"] != "author_id" {
+					t.Errorf("expected %s as field name but got %s", "author_id", val["field"])
+				}
+
+				if val["message"] != "author_id is required" {
+					t.Errorf("expected %s as message but got %s", "author_id is required", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+
+			val, ok = errorList[3].(map[string]interface{})
+			if ok {
+				if val["field"] != "photo_key" {
+					t.Errorf("expected %s as field name but got %s", "photo_key", val["field"])
+				}
+
+				if val["message"] != "photo_key is required" {
+					t.Errorf("expected %s as message but got %s", "photo_key is required", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+
+			val, ok = errorList[4].(map[string]interface{})
+			if ok {
+				if val["field"] != "status" {
+					t.Errorf("expected %s as field name but got %s", "status", val["field"])
+				}
+
+				if val["message"] != "status is required" {
+					t.Errorf("expected %s as message but got %s", "status is required", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("errorList should be true but got false")
+		}
+
+		// Check actual path values that has been parsed in service
+		if !reflect.DeepEqual(mockService.UpdateByIdMockPathValue, pathValue) {
+			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.UpdateByIdMockPathValue)
+		}
+	})
 }

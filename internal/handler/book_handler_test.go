@@ -2277,4 +2277,59 @@ func TestBookDeleteByIdHandler(t *testing.T) {
 			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.DeleteByIdMockPathValue)
 		}
 	})
+
+	t.Run("delete book with invalid id", func(t *testing.T) {
+		invalidBookId := "InvalidBookId"
+
+		pathValue := web.PathParamsDeleteBook{
+			Id: invalidBookId,
+		}
+		validate := config.ValidatorInit()
+		expectedServiceError := validate.Struct(pathValue)
+
+		mockService := &MockBookService{
+			MockError: expectedServiceError,
+		}
+
+		handler := NewBookHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodDelete, "/api/v1/books/InvalidBookId", nil)
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", pathValue.Id)
+
+		handler.DeleteById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("expected status code of %d but got %d", http.StatusBadRequest, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body data
+		errorList, ok := actualResponseBody.Errors.([]interface{})
+		if ok {
+			val, ok := errorList[0].(map[string]interface{})
+			if ok {
+				if val["field"] != "id" {
+					t.Errorf("expected %s as field name but got %s", "id", val["field"])
+				}
+
+				if val["message"] != "'InvalidBookId' is not a valid UUID" {
+					t.Errorf("expected %s as message but got %s", "'InvalidBookId' is not a valid UUID", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("errorList should be true but got false")
+		}
+	})
 }

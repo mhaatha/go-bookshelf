@@ -2212,4 +2212,69 @@ func TestBookDeleteByIdHandler(t *testing.T) {
 			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.DeleteByIdMockPathValue)
 		}
 	})
+
+	t.Run("delete book with not found id", func(t *testing.T) {
+		pathValue := web.PathParamsDeleteBook{
+			Id: "43723811-c8e3-4cba-85cc-142954064ae4",
+		}
+
+		mockService := &MockBookService{
+			MockError: appError.NewAppError(
+				http.StatusNotFound,
+				[]appError.ErrAggregate{
+					{
+						Field:   "id",
+						Message: "book with id '43723811-c8e3-4cba-85cc-142954064ae4' is not found",
+					},
+				},
+				nil,
+			),
+		}
+
+		handler := NewBookHandler(mockService)
+
+		req := httptest.NewRequest(http.MethodDelete, "/api/v1/books/43723811-c8e3-4cba-85cc-142954064ae4", nil)
+		res := httptest.NewRecorder()
+
+		// Path value must be set since httptest.NewRequest never goes through http.ServeMux
+		req.SetPathValue("id", pathValue.Id)
+
+		handler.DeleteById(res, req)
+
+		// Check status code
+		if res.Code != http.StatusNotFound {
+			t.Errorf("expected status code %d but got %d", http.StatusNotFound, res.Code)
+		}
+
+		// Get the actual response
+		var actualResponseBody web.WebFailedResponse
+		err := json.NewDecoder(res.Body).Decode(&actualResponseBody)
+		if err != nil {
+			t.Fatalf("error when parsing res body: %v", err)
+		}
+
+		// Check response body data
+		errorList, ok := actualResponseBody.Errors.([]interface{})
+		if ok {
+			val, ok := errorList[0].(map[string]interface{})
+			if ok {
+				if val["field"] != "id" {
+					t.Errorf("expected %s as field name but got %s", "id", val["field"])
+				}
+
+				if val["message"] != "book with id '43723811-c8e3-4cba-85cc-142954064ae4' is not found" {
+					t.Errorf("expected %s as message but got %s", "book with id '43723811-c8e3-4cba-85cc-142954064ae4' is not found", val["message"])
+				}
+			} else {
+				t.Error("val should be true but got false")
+			}
+		} else {
+			t.Error("errorList should be true but got false")
+		}
+
+		// Check actual path values that has been parsed in service
+		if !reflect.DeepEqual(mockService.DeleteByIdMockPathValue, pathValue) {
+			t.Errorf("expected %+v as path value but got %+v", pathValue, mockService.DeleteByIdMockPathValue)
+		}
+	})
 }

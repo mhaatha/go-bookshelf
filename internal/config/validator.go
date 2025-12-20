@@ -11,6 +11,9 @@ import (
 var (
 	// Regex for name, only a-z, A-Z, ., ', and -
 	nameRegex = regexp.MustCompile(`^[a-zA-Z .'-]+$`)
+
+	// Regex for password, min 8 chars, at least one uppercase and lowercase, and at least one digit
+	passwordRegex = regexp.MustCompile(`^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9]).{8,}$`)
 )
 
 func ValidatorInit() *validator.Validate {
@@ -23,6 +26,7 @@ func ValidatorInit() *validator.Validate {
 	validate.RegisterValidation("validName", validName)
 	validate.RegisterValidation("bookStatus", bookStatus)
 	validate.RegisterValidation("validPhotoKey", validPhotoKey)
+	validate.RegisterValidation("validPassword", validPassword)
 
 	return validate
 }
@@ -50,4 +54,9 @@ func validPhotoKey(fl validator.FieldLevel) bool {
 	}
 
 	return strings.HasSuffix(strings.ToLower(value), ".jpg")
+}
+
+func validPassword(fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+	return passwordRegex.MatchString(value)
 }

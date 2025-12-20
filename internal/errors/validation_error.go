@@ -32,6 +32,8 @@ func TranslateValidationErrors(err error) []map[string]string {
 				msg = "use YYYY-MM-DD for valid datetime"
 			case "validPhotoKey":
 				msg = fmt.Sprintf("'%s' is not a valid photo key", e.Value())
+			case "validPassword":
+				msg = fmt.Sprintf("%s must contain at least one uppercase, one lowercase, and one digit", e.Field())
 			default:
 				msg = fmt.Sprintf("%s is invalid", e.Field())
 			}

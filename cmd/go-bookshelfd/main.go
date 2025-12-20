@@ -73,12 +73,20 @@ func main() {
 	// Book router
 	router.BookRouter(bookhandler, mux)
 
+	// Auth resources
+	authService := service.NewAuthService(uow, validate)
+	authHandler := handler.NewAuthHandler(authService)
+
+	// Auth router
+	router.AuthRouter(authHandler, mux)
+
 	// Server
 	server := http.Server{
 		Addr:    ":" + cfg.AppPort,
 		Handler: mux,
 	}
 
+	// Graceful shutdown
 	if cfg.AppEnv == string(config.EnvProduction) {
 		go func() {
 			slog.Info("starting server on :" + cfg.AppPort)

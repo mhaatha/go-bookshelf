@@ -40,7 +40,7 @@ paths:
                     type: string
                   data:
                     $ref: "#/components/schemas/Author"
-                
+
     get:
       tags:
         - Author API
@@ -180,7 +180,7 @@ paths:
                   enum: [completed, reading, plan_to_read]
                 completed_date:
                   type: string
-                  format: date 
+                  format: date
                   nullable: true
       responses:
         201:
@@ -227,7 +227,7 @@ paths:
                     type: string
                   data:
                     type: array
-                    items: 
+                    items:
                       $ref: "#/components/schemas/GetBook"
   /api/v1/books/{id}:
     get:
@@ -284,7 +284,7 @@ paths:
                 photo_key:
                   type: string
                   minLength: 3
-                  maxLength: 255 
+                  maxLength: 255
                 status:
                   type: string
                   enum: [completed, reading, plan_to_read]
